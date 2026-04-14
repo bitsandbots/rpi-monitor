@@ -14,7 +14,7 @@
 
 ```bash
 sudo mkdir -p /opt/pi-monitor
-sudo cp pi_monitor.py index.html requirements.txt /opt/pi-monitor/
+sudo cp pi_monitor.py requirements.txt /opt/pi-monitor/
 sudo cp -r templates /opt/pi-monitor/
 
 cd /opt/pi-monitor
@@ -39,6 +39,12 @@ sudo systemctl status pi-monitor
 ```
 
 Edit `/etc/systemd/system/pi-monitor.service` to set environment variables before enabling.
+
+> **If using a venv**, update `ExecStart` in the service file to use the venv Python:
+> ```
+> ExecStart=/opt/pi-monitor/.venv/bin/python3 /opt/pi-monitor/pi_monitor.py
+> ```
+> The default service file points to `/usr/bin/python3` (system Python). Flask will not be found if it was installed only into the venv.
 
 ### 4. Environment Variables
 

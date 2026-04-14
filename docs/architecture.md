@@ -40,7 +40,7 @@ Browser
 1. Browser loads `index.html` (served by Flask).
 2. Dashboard JS polls `/api/status` every `PIMONITOR_REFRESH` seconds (default 2s).
 3. `/api/status` calls the metric functions:
-   - `get_cpu_usage()` — reads `/proc/stat` twice with 200 ms delta for accurate % per-core.
+   - `get_cpu_usage()` — reads `/proc/stat` and computes usage from the delta since the previous poll call (stored in `_cpu_prev`).
    - `get_cpu_temperature()` — reads `/sys/class/thermal/thermal_zone0/temp`.
    - `get_memory()` — parses `/proc/meminfo`.
    - `get_uptime()` — reads `/proc/uptime`.
@@ -51,7 +51,7 @@ Browser
 ## Hub — Data Flow
 
 1. At startup, `_load_nodes()` restores the node registry from `hub_nodes.json`.
-2. `_start_poller()` launches a background thread that calls `_poll_node()` for every registered node on `PIHUB_POLL_INTERVAL` (default 5s) using a `ThreadPoolExecutor(max_workers=10)`.
+2. `_start_poller()` launches a background thread that calls `_poll_node()` for every registered node on `PIHUB_POLL_INTERVAL` (default 5s) using a `ThreadPoolExecutor(max_workers=min(node_count, 8))`.
 3. Poll results are cached in the in-memory `_nodes` dict under a `_lock`.
 4. Browser requests `/api/fleet` — returns the cached snapshot for all nodes instantly.
 5. Proxy routes (e.g. `/api/nodes/<nid>/services`) forward to the corresponding node's API via `_fetch_node()` with per-request timeouts.

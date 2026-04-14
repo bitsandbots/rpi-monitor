@@ -27,10 +27,10 @@ No build step — the dashboard is a single self-contained `index.html`.
 | `/proc/stat` | `get_cpu_usage()` | Per-core CPU jiffies (delta method) |
 | `/proc/meminfo` | `get_memory()` | Total, free, available, cached RAM |
 | `/proc/uptime` | `get_uptime()` | Seconds since boot |
-| `/proc/net/dev` | `get_network()` | Interface RX/TX bytes |
-| `/proc/<pid>/status` | `get_top_processes()` | Process name, PID, state, memory |
+| `/sys/class/net/<iface>/statistics/{rx,tx}_bytes` | `get_network()` | Interface RX/TX byte counters |
+| `ps aux` (subprocess) | `get_top_processes()` | Top processes by CPU: user, PID, cpu%, mem%, command |
 | `/sys/class/thermal/thermal_zone0/temp` | `get_cpu_temperature()` | CPU temp in millidegrees |
-| `/sys/block/*/stat` | `get_storage()` | Disk I/O read/write sectors |
+| `df -BM` (subprocess) | `get_storage()` | Mount points, sizes in MB, filesystem type |
 | `df -h` (subprocess) | `get_storage()` | Mount points, used/free space |
 | `systemctl` (subprocess) | `get_services()`, `control_service()` | Service status, start/stop/restart/enable/disable |
 | `sudo reboot / shutdown` (subprocess) | `system_power()` | Power actions |
@@ -47,7 +47,7 @@ No build step — the dashboard is a single self-contained `index.html`.
 | Tool | Purpose |
 |------|---------|
 | `threading.Thread` | Background poller loop |
-| `concurrent.futures.ThreadPoolExecutor` | Parallel node polling (max 10 workers) |
+| `concurrent.futures.ThreadPoolExecutor` | Parallel node polling (`max_workers=min(node_count, 8)`) |
 | `threading.Lock` | Guards node registry dict |
 
 ## Persistence

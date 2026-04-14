@@ -153,7 +153,7 @@ pi-monitor/
 
 ## Requirements
 
-- Python 3.9+
+- Python 3.11+
 - Flask 3.0+
 - Raspberry Pi OS / Debian / Ubuntu (any Linux with `/proc` and `systemd`)
 - `sudo` access for service control and power management
