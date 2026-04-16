@@ -8,7 +8,7 @@ Browser
   │  HTTP polling (PIMONITOR_REFRESH, default 2s)
   ▼
 ┌─────────────────────────────────────────────┐
-│  Node Agent  (pi_monitor.py : 8585)         │
+│  Node Agent  (rpi_monitor.py : 8585)         │
 │                                             │
 │  Flask API ──► /proc, /sys, systemctl       │
 │  In-memory ring buffer (200 events)         │
@@ -21,7 +21,7 @@ Browser
   │
   ▼
 ┌─────────────────────────────────────────────┐
-│  Fleet Hub  (pi_monitor_hub.py : 8686)      │
+│  Fleet Hub  (rpi_monitor_hub.py : 8686)      │
 │                                             │
 │  Node registry  (hub_nodes.json)            │
 │  Background poller  (ThreadPoolExecutor)    │
@@ -81,19 +81,19 @@ Browser
 ## File Layout
 
 ```
-pi-monitor/
-├── pi_monitor.py              # Node agent — Flask API + all data collection
+rpi-monitor/
+├── rpi_monitor.py             # Node agent — Flask API + all data collection
 ├── templates/
 │   └── index.html             # Single-file frontend (HTML + CSS + JS)
-├── pi-monitor.service         # systemd unit
+├── rpi-monitor.service        # systemd unit
 ├── requirements.txt           # flask only
 ├── install.sh                 # Installer
 ├── release.sh                 # Release packager
 ├── .env.example               # All env vars documented
 └── hub/
-    ├── pi_monitor_hub.py      # Hub — fleet aggregation + proxy
+    ├── rpi_monitor_hub.py     # Hub — fleet aggregation + proxy
     ├── templates/
     │   └── hub.html           # Hub frontend
-    ├── pi-monitor-hub.service # systemd unit
+    ├── rpi-monitor-hub.service # systemd unit
     └── requirements.txt       # flask + requests
 ```

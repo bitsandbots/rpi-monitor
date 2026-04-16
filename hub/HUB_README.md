@@ -1,8 +1,8 @@
-# PiMonitor Hub — Lord of the Pi Monitors
+# RPiMonitor Hub — Lord of the RPi Monitors
 
 > One dashboard to discover, connect, and bind them all.
 
-A central aggregation console for managing multiple [PiMonitor v2](https://coreconduit.io) instances across your network. Monitor CPU, temperature, memory, and services for your entire fleet of Raspberry Pi and Linux devices from a single pane.
+A central aggregation console for managing multiple [RPiMonitor v2](https://coreconduit.io) instances across your network. Monitor CPU, temperature, memory, and services for your entire fleet of Raspberry Pi and Linux devices from a single pane.
 
 **CoreConduit Consulting Services** · MIT License
 
@@ -25,7 +25,7 @@ A central aggregation console for managing multiple [PiMonitor v2](https://corec
 pip install flask requests
 
 # Run
-python3 pi_monitor_hub.py
+python3 rpi_monitor_hub.py
 
 # Open → http://localhost:8686
 ```
@@ -34,13 +34,13 @@ python3 pi_monitor_hub.py
 
 ```
 ┌──────────────────────────┐
-│    PiMonitor Hub :8686   │  ← You are here
+│    RPiMonitor Hub :8686   │  ← You are here
 │    (Flask + Poller)      │
 └──────┬───────┬───────┬───┘
        │       │       │
        ▼       ▼       ▼
    ┌──────┐ ┌──────┐ ┌──────┐
-   │ Pi 1 │ │ Pi 2 │ │ Pi N │  ← PiMonitor v2 instances
+   │ Pi 1 │ │ Pi 2 │ │ Pi N │  ← RPiMonitor v2 instances
    │ :8585│ │ :8585│ │ :8585│
    └──────┘ └──────┘ └──────┘
 ```
@@ -64,9 +64,9 @@ All configuration via environment variables:
 ## systemd
 
 ```bash
-sudo cp pi-monitor-hub.service /etc/systemd/system/
+sudo cp rpi-monitor-hub.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now pi-monitor-hub
+sudo systemctl enable --now rpi-monitor-hub
 ```
 
 ## API Reference

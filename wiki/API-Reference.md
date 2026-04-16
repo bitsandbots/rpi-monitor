@@ -145,7 +145,7 @@ Query params: `?limit=N` (default 12, max 50)
     "pid": 1234,
     "cpu": 12.5,
     "mem": 1.3,
-    "command": "python3 /opt/pi-monitor/pi_monitor.py"
+    "command": "python3 /opt/rpi-monitor/rpi_monitor.py"
   }
 ]
 ```
@@ -274,7 +274,7 @@ Cached snapshot of all registered nodes.
 | `PUT` | `/api/nodes/<nid>` | Update label or token |
 
 ### `POST /api/discover`
-Scan the local /24 subnet for PiMonitor agents.
+Scan the local /24 subnet for RPiMonitor agents.
 
 ```json
 {"subnet": "192.168.1.0/24", "port": 8585}

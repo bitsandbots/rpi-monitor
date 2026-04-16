@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-PiMonitorHub — Lord of the Pi Monitors
+RPiMonitorHub — Lord of the RPi Monitors
 One dashboard to discover, connect, and bind them all.
 
 A central aggregation console that discovers, monitors, and controls
-multiple PiMonitor v2 instances across the network.
+multiple RPiMonitor v2 instances across the network.
 
 CoreConduit Consulting Services — https://coreconduit.io
 License: MIT
@@ -162,7 +162,7 @@ def _node_headers(node):
 
 
 def _fetch_node(node, path, method="GET", json_body=None, timeout=None):
-    """Make an HTTP request to a PiMonitor node."""
+    """Make an HTTP request to an RPiMonitor node."""
     t = timeout or HUB_CONFIG["request_timeout"]
     url = _node_url(node, path)
     headers = _node_headers(node)
@@ -261,7 +261,7 @@ def _get_local_ip():
 
 
 def _discover_subnet(subnet=None, port=None, timeout=1.5):
-    """Scan a /24 subnet for PiMonitor instances responding to /api/ping."""
+    """Scan a /24 subnet for RPiMonitor instances responding to /api/ping."""
     port = port or HUB_CONFIG["discovery_port"]
     if not subnet:
         local_ip = _get_local_ip()

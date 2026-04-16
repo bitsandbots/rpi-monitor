@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>PiMonitor — {{ boot.hostname or 'loading' }}</title>
+<title>RPiMonitor — {{ boot.hostname or 'loading' }}</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230c1a2e'/><text x='16' y='22' text-anchor='middle' font-size='18' fill='%232b7de9' font-family='sans-serif' font-weight='bold'>π</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -597,7 +597,7 @@ function setConnected(ok) {
     { text: 'Hostname: ' + (bootInfo.hostname || '—'), cls: '' },
     { text: 'OS: ' + (bootInfo.os || '—'), cls: '' },
     { text: 'Initializing monitors…', cls: '' },
-    { text: 'PiMonitor v2.0 ready.', cls: 'highlight' },
+    { text: 'RPiMonitor v2.0 ready.', cls: 'highlight' },
   ];
 
   const container = $('boot-log');

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-PiMonitor — Raspberry Pi System Monitor & Service Control Console
+RPiMonitor — Raspberry Pi System Monitor & Service Control Console
 A lightweight Flask-based dashboard for monitoring and managing Raspberry Pi
 and Linux devices. Reads live data from /proc, /sys, and systemctl.
 
@@ -745,20 +745,20 @@ if __name__ == "__main__":
     _parse_proc_stat()
     time.sleep(0.1)
 
-    log_event("PiMonitor starting...")
+    log_event("RPiMonitor starting...")
     log_event(f"Detected: {info['model']}")
     if info["soc"]:
         log_event(f"SoC: {info['soc']} | Arch: {info['architecture']}")
     log_event(f"Hostname: {info['hostname']} | Kernel: {info['kernel']}")
     log_event(f"Services configured: {len(CONFIG['services'])}")
     log_event(f"Listening on http://{CONFIG['host']}:{CONFIG['port']}")
-    log_event("PiMonitor ready.", "success")
+    log_event("RPiMonitor ready.", "success")
 
     marker = "PI" if info["is_raspberry_pi"] else "LINUX"
 
     print(f"""
 \033[36m╔══════════════════════════════════════════════════╗
-║   Pi\033[33mMonitor\033[36m · v2.0.0                              ║
+║   RPi\033[33mMonitor\033[36m · v2.0.0                              ║
 ║   CoreConduit Consulting Services                 ║
 ╠══════════════════════════════════════════════════╣\033[0m
   Device:   {info['model']} [{marker}]

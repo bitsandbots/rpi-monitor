@@ -1,4 +1,4 @@
-# PiMonitor Wiki
+# RPiMonitor Wiki
 
 > Lightweight, self-hosted system monitor and service console for Raspberry Pi and Linux devices.
 
@@ -6,11 +6,11 @@
 
 ---
 
-## What is PiMonitor?
+## What is RPiMonitor?
 
-PiMonitor is a zero-dependency, single-file Flask dashboard that turns any Raspberry Pi or Linux box into a remotely observable node. It reads live data directly from `/proc` and `/sys` — no agents, no psutil, no cloud.
+RPiMonitor is a zero-dependency, single-file Flask dashboard that turns any Raspberry Pi or Linux box into a remotely observable node. It reads live data directly from `/proc` and `/sys` — no agents, no psutil, no cloud.
 
-The **Hub** (`pi_monitor_hub.py`) adds a fleet layer: discover nodes on your network, view aggregate metrics, and control services across all your Pis from one dashboard.
+The **Hub** (`rpi_monitor_hub.py`) adds a fleet layer: discover nodes on your network, view aggregate metrics, and control services across all your Pis from one dashboard.
 
 ```
 Browser
@@ -41,8 +41,8 @@ Browser
 ## Quick Start
 
 ```bash
-git clone https://github.com/bitsandbots/pi-monitor
-cd pi-monitor
+git clone https://github.com/bitsandbots/rpi-monitor
+cd rpi-monitor
 sudo ./install.sh
 ```
 
@@ -52,4 +52,4 @@ Open `http://<pi-ip>:8585`
 
 ## Repository
 
-**GitHub:** https://github.com/bitsandbots/pi-monitor
+**GitHub:** https://github.com/bitsandbots/rpi-monitor

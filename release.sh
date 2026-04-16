@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# release.sh — PiMonitor release packager
+# release.sh — RPiMonitor release packager
 # Run from the repo root on your dev machine (not on the Pi).
 #
 # Usage:
-#   ./release.sh                  # Package current VERSION from pi_monitor.py
+#   ./release.sh                  # Package current VERSION from rpi_monitor.py
 #   ./release.sh 2.1.0            # Bump to 2.1.0, tag, and package
 #   ./release.sh 2.1.0 --dry-run  # Show what would happen, no changes
 #
 # Produces:
-#   dist/pi-monitor-<version>.tar.gz  — release tarball
-#   dist/pi-monitor-<version>.sha256  — checksum file
+#   dist/rpi-monitor-<version>.tar.gz  — release tarball
+#   dist/rpi-monitor-<version>.sha256  — checksum file
 #
 # CoreConduit Consulting Services — MIT License
 
@@ -49,7 +49,7 @@ CURRENT_VERSION=$(grep '^VERSION = ' pi_monitor.py | sed 's/VERSION = "\(.*\)"/\
 TARGET_VERSION="${NEW_VERSION:-$CURRENT_VERSION}"
 
 echo ""
-echo "  Pi|Monitor  Release"
+echo "  RPi|Monitor  Release"
 echo "  CoreConduit Consulting Services"
 echo ""
 info "Current version : $CURRENT_VERSION"
@@ -58,7 +58,7 @@ $DRY && warn "DRY RUN — no files will be changed"
 echo ""
 
 # ── Preflight ────────────────────────────────────────────────────────────────
-[[ -f pi_monitor.py ]]           || die "Run from repo root"
+[[ -f rpi_monitor.py ]]           || die "Run from repo root"
 command -v git    >/dev/null 2>&1 || die "git not found"
 command -v tar    >/dev/null 2>&1 || die "tar not found"
 command -v sha256sum >/dev/null 2>&1 || die "sha256sum not found"
@@ -73,16 +73,16 @@ fi
 # ── Bump version if requested ─────────────────────────────────────────────────
 bump_version() {
   local v="$1"
-  info "Bumping VERSION to $v in pi_monitor.py and hub/pi_monitor_hub.py"
+  info "Bumping VERSION to $v in rpi_monitor.py and hub/rpi_monitor_hub.py"
 
   if ! $DRY; then
-    sed -i "s/^VERSION = \".*\"/VERSION = \"$v\"/" pi_monitor.py
-    sed -i "s/^VERSION = \".*\"/VERSION = \"$v\"/" hub/pi_monitor_hub.py
-    # Also update banner line in pi_monitor.py if present
-    sed -i "s/v[0-9]\+\.[0-9]\+\.[0-9]\+ /v${v} /g" pi_monitor.py
+    sed -i "s/^VERSION = \".*\"/VERSION = \"$v\"/" rpi_monitor.py
+    sed -i "s/^VERSION = \".*\"/VERSION = \"$v\"/" hub/rpi_monitor_hub.py
+    # Also update banner line in rpi_monitor.py if present
+    sed -i "s/v[0-9]\+\.[0-9]\+\.[0-9]\+ /v${v} /g" rpi_monitor.py
     ok "Version bumped to $v"
   else
-    ok "[dry] Would bump VERSION → $v in pi_monitor.py, hub/pi_monitor_hub.py"
+    ok "[dry] Would bump VERSION → $v in rpi_monitor.py, hub/rpi_monitor_hub.py"
   fi
 }
 
@@ -95,23 +95,23 @@ fi
 
 # ── Build release tarball ─────────────────────────────────────────────────────
 DIST_DIR="dist"
-ARCHIVE_NAME="pi-monitor-${TARGET_VERSION}"
+ARCHIVE_NAME="rpi-monitor-${TARGET_VERSION}"
 ARCHIVE_PATH="${DIST_DIR}/${ARCHIVE_NAME}.tar.gz"
 CHECKSUM_PATH="${DIST_DIR}/${ARCHIVE_NAME}.sha256"
 
 # Files to include in release (relative to repo root)
 RELEASE_FILES=(
-  pi_monitor.py
+  rpi_monitor.py
   requirements.txt
   templates/index.html
-  pi-monitor.service
+  rpi-monitor.service
   install.sh
   .env.example
   README.md
-  hub/pi_monitor_hub.py
+  hub/rpi_monitor_hub.py
   hub/requirements.txt
   hub/templates/hub.html
-  hub/pi-monitor-hub.service
+  hub/rpi-monitor-hub.service
   hub/HUB_README.md
 )
 
@@ -149,11 +149,11 @@ tag_and_commit() {
 
   if [[ -n "$NEW_VERSION" && "$NEW_VERSION" != "$CURRENT_VERSION" ]]; then
     info "Committing version bump..."
-    git add pi_monitor.py hub/pi_monitor_hub.py
+    git add rpi_monitor.py hub/rpi_monitor_hub.py
     git commit -m "chore: bump version to ${TARGET_VERSION}"
   fi
 
-  git tag -a "$TAG" -m "PiMonitor v${TARGET_VERSION}"
+  git tag -a "$TAG" -m "RPiMonitor v${TARGET_VERSION}"
   ok "Tagged $TAG"
   info "Push with: git push origin main && git push origin $TAG"
 }

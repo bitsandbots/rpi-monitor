@@ -2,7 +2,7 @@
 
 All configuration is via environment variables. No config files are required.
 
-Set them in the systemd unit file (`/etc/systemd/system/pi-monitor.service`) or export them before running directly.
+Set them in the systemd unit file (`/etc/systemd/system/rpi-monitor.service`) or export them before running directly.
 
 ---
 
@@ -39,7 +39,7 @@ You can also manage the list live via the API:
 
 ---
 
-## Hub (`hub/pi_monitor_hub.py`)
+## Hub (`hub/rpi_monitor_hub.py`)
 
 | Variable | Default | Description |
 |---|---|---|

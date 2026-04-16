@@ -5,7 +5,7 @@
 **Check logs first:**
 
 ```bash
-journalctl -u pi-monitor -n 50 --no-pager
+journalctl -u rpi-monitor -n 50 --no-pager
 ```
 
 Common causes:
@@ -22,7 +22,7 @@ Common causes:
 ## Dashboard shows stale data / no data
 
 - Check the browser console for failed XHR requests to `/api/status`
-- Confirm the service is running: `systemctl status pi-monitor`
+- Confirm the service is running: `systemctl status rpi-monitor`
 - Verify the Pi's IP and port: `curl http://localhost:8585/api/ping`
 - If behind a firewall: `sudo ufw allow 8585/tcp`
 
@@ -54,7 +54,7 @@ The service is running as a non-root user without sudoers rules. Add scoped rule
 
 ## Hub shows all nodes as offline
 
-1. Check hub logs: `journalctl -u pi-monitor-hub -n 50`
+1. Check hub logs: `journalctl -u rpi-monitor-hub -n 50`
 2. Verify nodes are reachable from the hub machine: `curl http://<node-ip>:8585/api/ping`
 3. Check `PIHUB_TIMEOUT` — increase if nodes are on a slow network
 4. If nodes require auth tokens, verify they're set in `hub_nodes.json` or via `PUT /api/nodes/<nid>`
@@ -63,7 +63,7 @@ The service is running as a non-root user without sudoers rules. Add scoped rule
 
 ## Hub discovery finds nothing
 
-- Confirm nodes are running: `systemctl status pi-monitor` on each Pi
+- Confirm nodes are running: `systemctl status rpi-monitor` on each Pi
 - Verify the subnet matches your network (e.g. `192.168.1.0/24` vs `10.0.0.0/24`)
 - Check `PIHUB_DISCOVERY_PORT` matches `PIMONITOR_PORT` on nodes (both default to `8585`)
 - Firewall: ensure port 8585 is open between the hub and the Pi subnet
@@ -100,10 +100,10 @@ Each registered node keeps a cached status dict in memory — the hub is very li
 
 ```bash
 # Node agent
-journalctl -u pi-monitor -f
+journalctl -u rpi-monitor -f
 
 # Hub
-journalctl -u pi-monitor-hub -f
+journalctl -u rpi-monitor-hub -f
 
 # In-memory event log via API
 curl http://localhost:8585/api/logs | python3 -m json.tool

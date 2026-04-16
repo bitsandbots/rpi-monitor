@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>PiMonitor Hub — Pi-e Bakery Fleet</title>
+<title>RPiMonitor Hub — Pi-e Bakery Fleet</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230b1220'/><path d='M8 20c0-5 3.5-10 8-10s8 5 8 10z' fill='%232b7de9' opacity='0.85'/><path d='M6 20h20v2a2 2 0 01-2 2H8a2 2 0 01-2-2z' fill='%23e07018'/><path d='M13 14c.5-2 1.5-3 3-3s2.5 1 3 3' fill='none' stroke='white' stroke-width='1.2' opacity='0.4'/></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -496,9 +496,9 @@ body {
     </div>
     <div>
       <div class="topbar-title">
-        <span class="t-pi">Pi</span><span class="t-monitor">Monitor</span><span class="t-hub">Hub</span>
+        <span class="t-pi">RPi</span><span class="t-monitor">Monitor</span><span class="t-hub">Hub</span>
       </div>
-      <div class="topbar-sub">Pi-e Bakery Fleet Manager</div>
+      <div class="topbar-sub">RPi-e Bakery Fleet Manager</div>
     </div>
   </div>
   <div class="topbar-right">
@@ -563,7 +563,7 @@ body {
     <div class="section-hdr">
       <div>
         <div class="section-title">The Oven</div>
-        <div class="section-sub">Scan the network for fresh PiMonitor instances ready to join the bakery</div>
+        <div class="section-sub">Scan the network for fresh RPiMonitor instances ready to join the bakery</div>
       </div>
     </div>
     <div class="card" style="--accent:var(--blue);--accent-end:var(--orange)">
@@ -621,7 +621,7 @@ body {
 
 <script>
 // ====================================================================
-// PiMonitor Hub Frontend — Pi-e Bakery Edition
+// RPiMonitor Hub Frontend — Pi-e Bakery Edition
 // ====================================================================
 const POLL = {{ config.poll_interval * 1000 }};
 let activeView = 'fleet';
@@ -725,7 +725,7 @@ async function refreshFleet() {
         '<path d="M10 44h44v4a4 4 0 01-4 4H14a4 4 0 01-4-4z" fill="var(--orange-dim)" opacity="0.2"/>' +
       '</svg>' +
       '<div class="empty-title">No Nodes in the Kitchen</div>' +
-      '<div class="empty-sub">Use "Add Node" or The Oven to discover PiMonitor instances</div>' +
+      '<div class="empty-sub">Use "Add Node" or The Oven to discover RPiMonitor instances</div>' +
     '</div>';
     return;
   }
@@ -782,7 +782,7 @@ function confirmRemoveNode(id, label) {
   $('modal').classList.add('show');
   $('modal-icon').textContent = '\u2298';
   $('modal-title').textContent = 'Remove Node';
-  $('modal-msg').textContent = 'Remove "' + label + '" from the kitchen? The PiMonitor instance itself will keep running.';
+  $('modal-msg').textContent = 'Remove "' + label + '" from the kitchen? The RPiMonitor instance itself will keep running.';
   const btn = $('modal-yes');
   btn.textContent = 'Remove';
   btn.style.background = 'rgba(212,48,48,0.08)'; btn.style.color = 'var(--red)'; btn.style.borderColor = 'rgba(212,48,48,0.3)';
@@ -813,7 +813,7 @@ async function runDiscovery() {
   $('discover-ctl').classList.remove('scanning');
 
   if (!r) { $('discover-status').textContent = 'Scan failed.'; return; }
-  $('discover-status').textContent = 'Found ' + r.count + ' PiMonitor instance' + (r.count !== 1 ? 's' : '') + '.';
+  $('discover-status').textContent = 'Found ' + r.count + ' RPiMonitor instance' + (r.count !== 1 ? 's' : '') + '.';
 
   if (r.found.length === 0) {
     $('discover-results').innerHTML = '<div style="color:var(--text-muted);font-family:var(--font-mono);font-size:13px;padding:14px">No PiMonitor instances found on this subnet.</div>';

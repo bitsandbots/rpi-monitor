@@ -1,4 +1,4 @@
-# PiMonitor — Setup & Usage
+# RPiMonitor — Setup & Usage
 
 ## Prerequisites
 
@@ -13,11 +13,11 @@
 ### 1. Install
 
 ```bash
-sudo mkdir -p /opt/pi-monitor
-sudo cp pi_monitor.py requirements.txt /opt/pi-monitor/
+sudo mkdir -p /opt/rpi-monitor
+sudo cp rpi_monitor.py requirements.txt /opt/rpi-monitor/
 sudo cp -r templates /opt/pi-monitor/
 
-cd /opt/pi-monitor
+cd /opt/rpi-monitor
 sudo python3 -m venv .venv
 sudo .venv/bin/pip install -r requirements.txt
 ```
@@ -25,24 +25,24 @@ sudo .venv/bin/pip install -r requirements.txt
 ### 2. Run (development)
 
 ```bash
-python3 pi_monitor.py
+python3 rpi_monitor.py
 # Dashboard → http://<pi-ip>:8585
 ```
 
 ### 3. Run as a systemd service (production)
 
 ```bash
-sudo cp pi-monitor.service /etc/systemd/system/
+sudo cp rpi-monitor.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now pi-monitor
-sudo systemctl status pi-monitor
+sudo systemctl enable --now rpi-monitor
+sudo systemctl status rpi-monitor
 ```
 
 Edit `/etc/systemd/system/pi-monitor.service` to set environment variables before enabling.
 
 > **If using a venv**, update `ExecStart` in the service file to use the venv Python:
 > ```
-> ExecStart=/opt/pi-monitor/.venv/bin/python3 /opt/pi-monitor/pi_monitor.py
+> ExecStart=/opt/rpi-monitor/.venv/bin/python3 /opt/rpi-monitor/rpi_monitor.py
 > ```
 > The default service file points to `/usr/bin/python3` (system Python). Flask will not be found if it was installed only into the venv.
 
@@ -108,9 +108,9 @@ python3 pi_monitor_hub.py
 ### 3. Run as a systemd service
 
 ```bash
-sudo cp hub/pi-monitor-hub.service /etc/systemd/system/
+sudo cp hub/rpi-monitor-hub.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now pi-monitor-hub
+sudo systemctl enable --now rpi-monitor-hub
 ```
 
 ### 4. Environment Variables

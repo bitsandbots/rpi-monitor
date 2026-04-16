@@ -61,4 +61,4 @@ No build step — the dashboard is a single self-contained `index.html`.
 
 | Tool | Config File |
 |------|------------|
-| systemd | `pi-monitor.service` / `hub/pi-monitor-hub.service` |
+| systemd | `rpi-monitor.service` / `hub/rpi-monitor-hub.service` |

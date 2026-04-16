@@ -1,14 +1,14 @@
 [Unit]
-Description=PiMonitor — Raspberry Pi System Monitor
-Documentation=https://github.com/coreconduit/pi-monitor
+Description=RPiMonitor — Raspberry Pi System Monitor
+Documentation=https://github.com/coreconduit/rpi-monitor
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/opt/pi-monitor
-ExecStart=/usr/bin/python3 /opt/pi-monitor/pi_monitor.py
+WorkingDirectory=/opt/rpi-monitor
+ExecStart=/usr/bin/python3 /opt/rpi-monitor/rpi_monitor.py
 Restart=on-failure
 RestartSec=5
 StandardOutput=journal

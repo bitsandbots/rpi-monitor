@@ -1,4 +1,4 @@
-# PiMonitor — Architecture
+# RPiMonitor — Architecture
 
 ## High-Level Design
 
@@ -8,7 +8,7 @@ Browser
   │  HTTP / polling (every 2s)
   ▼
 ┌─────────────────────────────────────────────┐
-│  Node Agent  (pi_monitor.py : 8585)         │
+│  Node Agent  (rpi_monitor.py : 8585)         │
 │                                             │
 │  Flask API ──► /proc, /sys, systemctl       │
 │  In-memory ring buffer (200 events)         │
@@ -21,7 +21,7 @@ Browser
   │
   ▼
 ┌─────────────────────────────────────────────┐
-│  Fleet Hub  (pi_monitor_hub.py : 8686)      │
+│  Fleet Hub  (rpi_monitor_hub.py : 8686)      │
 │                                             │
 │  Node registry  (hub_nodes.json)            │
 │  Background poller  (ThreadPoolExecutor)    │
@@ -29,10 +29,10 @@ Browser
 │  Proxy routes  ──► Node Agent APIs          │
 └──────────────┬──────────────────────────────┘
                │  HTTP (per-node)
-       ┌───────┴────────┐
-       ▼                ▼
-  Node :8585       Node :8585
-  (Pi A)           (Pi B)
+      ┌────────┴────────┐
+      ▼                 ▼
+ Node :8585       Node :8585
+ (Pi A)           (Pi B)
 ```
 
 ## Node Agent — Data Flow

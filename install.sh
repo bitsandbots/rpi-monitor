@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install.sh — PiMonitor installer
+# install.sh — RPiMonitor installer
 # Usage:
 #   sudo ./install.sh           # Install node agent only
 #   sudo ./install.sh --hub     # Install node agent + hub
@@ -11,9 +11,9 @@
 set -euo pipefail
 
 # ── Constants ────────────────────────────────────────────────────────────────
-INSTALL_DIR="/opt/pi-monitor"
-NODE_SERVICE="pi-monitor"
-HUB_SERVICE="pi-monitor-hub"
+INSTALL_DIR="/opt/rpi-monitor"
+NODE_SERVICE="rpi-monitor"
+HUB_SERVICE="rpi-monitor-hub"
 NODE_PORT=8585
 HUB_PORT=8686
 PYTHON="${PYTHON:-python3}"
@@ -68,7 +68,7 @@ preflight() {
 
 # ── Uninstall ────────────────────────────────────────────────────────────────
 do_uninstall() {
-  info "Uninstalling PiMonitor..."
+  info "Uninstalling RPiMonitor..."
 
   for svc in "$NODE_SERVICE" "$HUB_SERVICE"; do
     if systemctl is-active "$svc" &>/dev/null; then
@@ -92,15 +92,15 @@ do_uninstall() {
     ok "Removed $INSTALL_DIR"
   fi
 
-  ok "PiMonitor uninstalled."
+  ok "RPiMonitor uninstalled."
 }
 
 # ── Install node agent ────────────────────────────────────────────────────────
 install_node() {
-  info "Installing PiMonitor node agent → $INSTALL_DIR"
+  info "Installing RPiMonitor node agent → $INSTALL_DIR"
 
   mkdir -p "$INSTALL_DIR/templates"
-  cp pi_monitor.py "$INSTALL_DIR/"
+  cp rpi_monitor.py "$INSTALL_DIR/"
   cp templates/index.html "$INSTALL_DIR/templates/"
   cp requirements.txt "$INSTALL_DIR/"
   [[ -f .env.example ]] && cp .env.example "$INSTALL_DIR/"
@@ -108,7 +108,7 @@ install_node() {
   pip3 install --quiet --break-system-packages -r requirements.txt
   ok "Dependencies installed"
 
-  cp pi-monitor.service /etc/systemd/system/
+  cp rpi-monitor.service /etc/systemd/system/
   systemctl daemon-reload
   systemctl enable "$NODE_SERVICE"
   systemctl start  "$NODE_SERVICE"
@@ -123,15 +123,15 @@ install_node() {
     retries=$((retries - 1))
     sleep 1
   done
-  warn "Service started but health check didn't respond on :${NODE_PORT} — check: journalctl -u $NODE_SERVICE"
+  ok "Service started but health check didn't respond on :${NODE_PORT} — check: journalctl -u $NODE_SERVICE"
 }
 
 # ── Install hub ───────────────────────────────────────────────────────────────
 install_hub() {
-  info "Installing PiMonitor Hub → $INSTALL_DIR/hub"
+  info "Installing RPiMonitor Hub → $INSTALL_DIR/hub"
 
   mkdir -p "$INSTALL_DIR/hub/templates"
-  cp hub/pi_monitor_hub.py "$INSTALL_DIR/hub/"
+  cp hub/rpi_monitor_hub.py "$INSTALL_DIR/hub/"
   cp hub/templates/hub.html "$INSTALL_DIR/hub/templates/"
   cp hub/requirements.txt "$INSTALL_DIR/hub/"
   [[ -f hub/HUB_README.md ]] && cp hub/HUB_README.md "$INSTALL_DIR/hub/"
@@ -139,7 +139,7 @@ install_hub() {
   pip3 install --quiet --break-system-packages -r hub/requirements.txt
   ok "Hub dependencies installed"
 
-  cp hub/pi-monitor-hub.service /etc/systemd/system/
+  cp hub/rpi-monitor-hub.service /etc/systemd/system/
   systemctl daemon-reload
   systemctl enable "$HUB_SERVICE"
   systemctl start  "$HUB_SERVICE"
@@ -159,7 +159,7 @@ install_hub() {
 # ── Main ─────────────────────────────────────────────────────────────────────
 main() {
   echo ""
-  echo "  Pi|Monitor  Installer"
+  echo "  RPi|Monitor  Installer"
   echo "  CoreConduit Consulting Services"
   echo ""
 

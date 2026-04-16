@@ -1,0 +1,17 @@
+[
+  "rpi-monitor",
+  "clippy",
+  "docsync-web",
+  "docsync-sync",
+  "docsync-backup",
+  "flow-analyzer",
+  "ollama",
+  "pisync",
+  "rag-chatbot",
+  "siteedit",
+  "apache2",
+  "mariadb",
+  "ssh",
+  "cron",
+  "avahi-daemon"
+]

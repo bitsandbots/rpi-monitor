@@ -1,10 +1,10 @@
 # Hub Setup
 
-The Hub (`pi_monitor_hub.py`) is an optional fleet layer that aggregates multiple PiMonitor node agents into a single dashboard.
+The Hub (`rpi_monitor_hub.py`) is an optional fleet layer that aggregates multiple RPiMonitor node agents into a single dashboard.
 
 ```
 ┌──────────────────────────┐
-│    PiMonitor Hub :8686   │  ← central console
+│    RPiMonitor Hub :8686   │  ← central console
 └──────┬───────┬───────┬───┘
        ▼       ▼       ▼
    Pi A     Pi B     Pi N
@@ -33,7 +33,7 @@ sudo ./install.sh --hub-only
 
 ```bash
 pip3 install flask requests --break-system-packages
-python3 hub/pi_monitor_hub.py
+python3 hub/rpi_monitor_hub.py
 ```
 
 Open `http://<hub-ip>:8686`
@@ -44,7 +44,7 @@ Open `http://<hub-ip>:8686`
 
 ### Option 1 — Network Discovery (Signal Fires)
 
-In the hub dashboard, click **Discover** and enter your subnet (e.g. `192.168.1.0/24`). The hub will scan all 254 hosts in parallel and list any responding PiMonitor agents.
+In the hub dashboard, click **Discover** and enter your subnet (e.g. `192.168.1.0/24`). The hub will scan all 254 hosts in parallel and list any responding RPiMonitor agents.
 
 Via API:
 

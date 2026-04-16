@@ -14,8 +14,8 @@
 Clone the repo and run `install.sh` as root:
 
 ```bash
-git clone https://github.com/bitsandbots/pi-monitor
-cd pi-monitor
+git clone https://github.com/bitsandbots/rpi-monitor
+cd rpi-monitor
 sudo ./install.sh
 ```
 
@@ -42,13 +42,13 @@ The installer will:
 Download a release from [GitHub Releases](https://github.com/bitsandbots/pi-monitor/releases):
 
 ```bash
-curl -LO https://github.com/bitsandbots/pi-monitor/releases/download/v2.0.0/pi-monitor-2.0.0.tar.gz
+curl -LO https://github.com/bitsandbots/rpi-monitor/releases/download/v2.0.0/rpi-monitor-2.0.0.tar.gz
 # Verify checksum
-curl -LO https://github.com/bitsandbots/pi-monitor/releases/download/v2.0.0/pi-monitor-2.0.0.sha256
-sha256sum -c pi-monitor-2.0.0.sha256
+curl -LO https://github.com/bitsandbots/rpi-monitor/releases/download/v2.0.0/rpi-monitor-2.0.0.sha256
+sha256sum -c rpi-monitor-2.0.0.sha256
 
-tar -xzf pi-monitor-2.0.0.tar.gz
-cd pi-monitor-2.0.0
+tar -xzf rpi-monitor-2.0.0.tar.gz
+cd rpi-monitor-2.0.0
 sudo ./install.sh
 ```
 
@@ -71,16 +71,16 @@ Access at `http://<pi-ip>:8585`.
 ## Install as systemd Service (Manual)
 
 ```bash
-sudo cp pi-monitor.service /etc/systemd/system/
+sudo cp rpi-monitor.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now pi-monitor
+sudo systemctl enable --now rpi-monitor
 ```
 
 Check status:
 
 ```bash
-sudo systemctl status pi-monitor
-journalctl -u pi-monitor -f
+sudo systemctl status rpi-monitor
+journalctl -u rpi-monitor -f
 ```
 
 ---
@@ -110,4 +110,4 @@ List each service explicitly — do **not** use wildcards.
 sudo ./install.sh --uninstall
 ```
 
-This stops and disables both services, removes unit files, and deletes `/opt/pi-monitor`.
+This stops and disables both services, removes unit files, and deletes `/opt/rpi-monitor`.

@@ -1,13 +1,13 @@
 [Unit]
-Description=PiMonitor Hub — Lord of the Pi Monitors
+Description=RPiMonitor Hub — Lord of the Pi Monitors
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
 User=coreconduit
-WorkingDirectory=/opt/pi-monitor/hub
-ExecStart=/usr/bin/python3 /opt/pi-monitor/hub/pi_monitor_hub.py
+WorkingDirectory=/opt/rpi-monitor/hub
+ExecStart=/usr/bin/python3 /opt/rpi-monitor/hub/rpi_monitor_hub.py
 Restart=on-failure
 RestartSec=5
 StandardOutput=journal

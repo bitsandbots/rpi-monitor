@@ -1,10 +1,10 @@
-# PiMonitor — API Reference
+# RPiMonitor — API Reference
 
 All responses are JSON. Authentication (if enabled) requires `Authorization: Bearer <token>` on every request.
 
 ---
 
-## Node Agent API (`pi_monitor.py`, default port 8585)
+## Node Agent API (`rpi_monitor.py`, default port 8585)
 
 ### Health
 
@@ -154,7 +154,7 @@ Query params: `?limit=N` (default 12, max 50).
     "pid": 1234,
     "cpu": 12.5,
     "mem": 1.3,
-    "command": "python3 /opt/pi-monitor/pi_monitor.py"
+    "command": "python3 /opt/rpi-monitor/rpi_monitor.py"
   }
 ]
 ```
@@ -270,7 +270,7 @@ Log levels: `info`, `success`, `warning`, `error`.
 
 ---
 
-## Fleet Hub API (`hub/pi_monitor_hub.py`, default port 8686)
+## Fleet Hub API (`hub/rpi_monitor_hub.py`, default port 8686)
 
 ### Health
 

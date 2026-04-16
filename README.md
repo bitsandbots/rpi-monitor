@@ -1,4 +1,4 @@
-# Pi**Monitor** v2.0
+# RPi**Monitor** v2.0
 
 A lightweight, self-hosted Raspberry Pi system monitor and service control console written in Python. Single-file Flask backend, zero JavaScript dependencies, no build step.
 
@@ -39,8 +39,8 @@ Built for [CoreConduit Consulting Services](https://coreconduit.com) infrastruct
 ### One-command install (recommended)
 
 ```bash
-git clone https://github.com/coreconduit/pi-monitor
-cd pi-monitor
+git clone https://github.com/coreconduit/rpi-monitor
+cd rpi-monitor
 sudo ./install.sh           # node agent only
 sudo ./install.sh --hub     # node agent + hub
 sudo ./install.sh --hub-only  # hub only
@@ -55,21 +55,21 @@ Access at `http://<pi-ip>:8585` (node) or `http://<pi-ip>:8686` (hub).
 pip install flask --break-system-packages
 
 # Run directly
-python3 pi_monitor.py
+python3 rpi_monitor.py
 ```
 
 ### Install as Service (manual)
 
 ```bash
-sudo cp pi-monitor.service /etc/systemd/system/
+sudo cp rpi-monitor.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now pi-monitor
+sudo systemctl enable --now rpi-monitor
 ```
 
 Check status:
 ```bash
-sudo systemctl status pi-monitor
-journalctl -u pi-monitor -f
+sudo systemctl status rpi-monitor
+journalctl -u rpi-monitor -f
 ```
 
 ### Uninstall
@@ -98,7 +98,7 @@ Option 1 — environment variable:
 export PIMONITOR_SERVICES="ssh,nginx,docker,ollama,mosquitto"
 ```
 
-Option 2 — edit `CONFIG["services"]` in `pi_monitor.py` directly.
+Option 2 — edit `CONFIG["services"]` in `rpi_monitor.py` directly.
 
 ### Authentication
 
@@ -108,7 +108,7 @@ Set `PIMONITOR_TOKEN` to require Bearer token auth on all API endpoints:
 export PIMONITOR_TOKEN=my-secret-token
 ```
 
-The web UI currently does not send auth headers — token auth is designed for API-only access. For UI auth, place PiMonitor behind a reverse proxy with basic auth.
+The web UI currently does not send auth headers — token auth is designed for API-only access. For UI auth, place RPiMonitor behind a reverse proxy with basic auth.
 
 ## API Endpoints
 
@@ -131,7 +131,7 @@ The web UI currently does not send auth headers — token auth is designed for A
 If running as a non-root user, add scoped sudoers rules:
 
 ```bash
-# /etc/sudoers.d/pi-monitor
+# /etc/sudoers.d/rpi-monitor
 # Restrict to specific services rather than wildcards
 pimonitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl start ssh nginx docker ollama mosquitto
 pimonitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop ssh nginx docker ollama mosquitto
@@ -147,11 +147,11 @@ pimonitor ALL=(ALL) NOPASSWD: /sbin/shutdown
 ## Architecture
 
 ```
-pi-monitor/
-├── pi_monitor.py          # Flask backend — all data collection + API + boot detection
+rpi-monitor/
+├── rpi_monitor.py          # Flask backend — all data collection + API + boot detection
 ├── templates/
 │   └── index.html         # Self-contained frontend (HTML + CSS + JS, no build step)
-├── pi-monitor.service     # Systemd unit file
+├── rpi-monitor.service     # Systemd unit file
 ├── requirements.txt       # Flask only
 └── README.md
 ```
