@@ -30,7 +30,7 @@ sudo ./install.sh
 
 The installer will:
 1. Check Python 3.11+, pip3, and systemctl are present
-2. Copy files to `/opt/pi-monitor`
+2. Copy files to `/opt/rpi-monitor`
 3. Install Python dependencies via pip
 4. Install and enable the systemd service
 5. Wait up to 10 seconds for the health endpoint to respond
@@ -39,7 +39,7 @@ The installer will:
 
 ## Install from Release Tarball
 
-Download a release from [GitHub Releases](https://github.com/bitsandbots/pi-monitor/releases):
+Download a release from [GitHub Releases](https://github.com/bitsandbots/rpi-monitor/releases):
 
 ```bash
 curl -LO https://github.com/bitsandbots/rpi-monitor/releases/download/v2.0.0/rpi-monitor-2.0.0.tar.gz
@@ -61,7 +61,7 @@ sudo ./install.sh
 pip3 install flask --break-system-packages
 
 # Run directly
-python3 pi_monitor.py
+python3 rpi_monitor.py
 ```
 
 Access at `http://<pi-ip>:8585`.
@@ -90,7 +90,7 @@ journalctl -u rpi-monitor -f
 If running as a non-root user, grant scoped sudoers access:
 
 ```
-# /etc/sudoers.d/pi-monitor
+# /etc/sudoers.d/rpi-monitor
 pimonitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl start ssh nginx docker ollama
 pimonitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop ssh nginx docker ollama
 pimonitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart ssh nginx docker ollama

@@ -25,7 +25,7 @@ A central aggregation console for managing multiple [PiMonitor v2](https://corec
 pip install flask requests
 
 # Run
-python3 pi_monitor_hub.py
+python3 rpi_monitor_hub.py
 
 # Open → http://localhost:8686
 ```

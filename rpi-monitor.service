@@ -23,7 +23,7 @@ Environment=PIMONITOR_PORT=8585
 
 # Hardening
 ProtectSystem=strict
-ReadWritePaths=/opt/pi-monitor
+ReadWritePaths=/opt/rpi-monitor
 ProtectHome=true
 NoNewPrivileges=false
 PrivateTmp=true

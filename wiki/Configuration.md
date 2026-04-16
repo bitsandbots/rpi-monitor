@@ -63,7 +63,7 @@ Registered nodes are stored in `hub_nodes.json`. This file is created automatica
 Edit the service file:
 
 ```bash
-sudo systemctl edit pi-monitor
+sudo systemctl edit rpi-monitor
 ```
 
 Add:
@@ -79,7 +79,7 @@ Then reload:
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl restart pi-monitor
+sudo systemctl restart rpi-monitor
 ```
 
 ---

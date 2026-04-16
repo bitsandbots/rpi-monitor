@@ -15,7 +15,7 @@
 ```bash
 sudo mkdir -p /opt/rpi-monitor
 sudo cp rpi_monitor.py requirements.txt /opt/rpi-monitor/
-sudo cp -r templates /opt/pi-monitor/
+sudo cp -r templates /opt/rpi-monitor/
 
 cd /opt/rpi-monitor
 sudo python3 -m venv .venv
@@ -38,7 +38,7 @@ sudo systemctl enable --now rpi-monitor
 sudo systemctl status rpi-monitor
 ```
 
-Edit `/etc/systemd/system/pi-monitor.service` to set environment variables before enabling.
+Edit `/etc/systemd/system/rpi-monitor.service` to set environment variables before enabling.
 
 > **If using a venv**, update `ExecStart` in the service file to use the venv Python:
 > ```
@@ -161,7 +161,7 @@ The node agent runs as `root` under systemd (required for `systemctl` control an
 To run as a non-root user with limited sudo, add to `/etc/sudoers.d/pi-monitor`:
 
 ```
-pi-monitor ALL=(ALL) NOPASSWD: /bin/systemctl, /sbin/reboot, /sbin/shutdown
+rpi-monitor ALL=(ALL) NOPASSWD: /bin/systemctl, /sbin/reboot, /sbin/shutdown
 ```
 
 Then change `User=root` to `User=pi-monitor` in the service file and create the user.
