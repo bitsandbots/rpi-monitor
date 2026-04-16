@@ -158,10 +158,10 @@ The hub stores and uses the token for all requests to that node.
 
 The node agent runs as `root` under systemd (required for `systemctl` control and `reboot`/`shutdown`). For development without root, service control and power actions will fail gracefully — metric reads still work.
 
-To run as a non-root user with limited sudo, add to `/etc/sudoers.d/pi-monitor`:
+To run as a non-root user with limited sudo, add to `/etc/sudoers.d/rpi-monitor`:
 
 ```
 rpi-monitor ALL=(ALL) NOPASSWD: /bin/systemctl, /sbin/reboot, /sbin/shutdown
 ```
 
-Then change `User=root` to `User=pi-monitor` in the service file and create the user.
+Then change `User=root` to `User=rpi-monitor` in the service file and create the user.

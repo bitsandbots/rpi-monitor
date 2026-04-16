@@ -64,9 +64,9 @@ All configuration via environment variables:
 ## systemd
 
 ```bash
-sudo cp pi-monitor-hub.service /etc/systemd/system/
+sudo cp rpi-monitor-hub.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now pi-monitor-hub
+sudo systemctl enable --now rpi-monitor-hub
 ```
 
 ## API Reference
