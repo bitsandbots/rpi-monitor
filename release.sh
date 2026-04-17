@@ -104,6 +104,7 @@ RELEASE_FILES=(
   rpi_monitor.py
   requirements.txt
   templates/index.html
+  static
   rpi-monitor.service
   install.sh
   .env.example
