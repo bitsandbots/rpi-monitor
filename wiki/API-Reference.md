@@ -232,6 +232,63 @@ Log levels: `info`, `success`, `warning`, `error`
 
 ---
 
+### `GET /api/system-health` (v2.2.0+)
+System health status, including critical services and stability checks.
+
+```json
+{
+  "stable": true,
+  "issues": [],
+  "critical_services_failed": [],
+  "all_critical_ok": true
+}
+```
+
+With issues:
+
+```json
+{
+  "stable": false,
+  "issues": [
+    { "type": "oom", "severity": "critical", "message": "Out of memory condition detected" }
+  ],
+  "critical_services_failed": [
+    { "name": "dbus", "state": "inactive", "critical": true }
+  ],
+  "all_critical_ok": false
+}
+```
+
+### `GET /api/status` (v2.2.0+)
+Now includes `temperature_status` and `power_status`:
+
+```json
+{
+  "cpu": { "usage": 15.2, "cores": [12.3, 18.1, 14.0, 16.5], ... },
+  "temperature": 52.3,
+  "temperature_status": {
+    "temp_c": 52.3,
+    "level": "normal",           // "warning" | "critical" | "throttling"
+    "message": null,
+    "color": "var(--green)",
+    "throttled_status": null
+  },
+  "power_status": {
+    "available": true,
+    "undervoltage_occurred": false,
+    "frequency_capped_occurred": false,
+    "undervoltage_now": false,
+    "frequency_capped_now": false,
+    "throttled_now": false,
+    "throttled_raw": "throttled=0x0"
+  },
+  "memory": { ... },
+  "uptime": { ... }
+}
+```
+
+---
+
 ## Fleet Hub API — port 8686
 
 ### `GET /api/ping`

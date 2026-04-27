@@ -23,7 +23,7 @@ from flask import Flask, jsonify, render_template, request, abort
 
 app = Flask(__name__)
 
-VERSION = "2.1.0"
+VERSION = "2.2.0"
 
 # ═══════════════════════════════════════════════════════════════════════════
 # Configuration
@@ -279,6 +279,234 @@ def get_cpu_temperature() -> float:
         return round(int(temp_str) / 1000.0, 1)
     except ValueError:
         return 0.0
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Temperature Alerts
+# ═══════════════════════════════════════════════════════════════════════════
+TEMP_WARNING = 70  # °C - Start warning
+TEMP_CRITICAL = 80  # °C - Red alert
+TEMP_THROTTLE = 85  # °C - Pi throttles automatically
+
+
+def get_temperature_status() -> dict:
+    """
+    Temperature with alert levels.
+
+    Returns:
+        temp_c: float - Current CPU temperature in °C
+        level: 'normal' | 'warning' | 'critical' | 'throttling'
+        message: str | None - Human-readable alert message
+        color: str - CSS color class for UI
+        throttled_status: dict | None - vcgencmd get_throttled output if Pi
+    """
+    temp = get_cpu_temperature()
+
+    # Try to get throttled status on Pi (vcgencmd)
+    throttled_raw = _run("vcgencmd get_throttled 2>/dev/null")
+    throttled_status = None
+
+    if throttled_raw and "throttled=0x" in throttled_raw:
+        try:
+            value = int(throttled_raw.split("=")[1].strip(), 16)
+            throttled_status = {
+                "undervoltage_occurred": bool(value & (1 << 0)),
+                "frequency_capped_occurred": bool(value & (1 << 1)),
+                "throttled_occurred": bool(value & (1 << 2)),
+                "undervoltage_now": bool(value & (1 << 16)),
+                "frequency_capped_now": bool(value & (1 << 17)),
+                "throttled_now": bool(value & (1 << 18)),
+            }
+        except (ValueError, IndexError):
+            pass
+
+    # Determine alert level
+    if temp >= TEMP_THROTTLE:
+        return {
+            "temp_c": temp,
+            "level": "throttling",
+            "message": f"CPU at {temp}°C — throttling active (VCPU frequency capped)",
+            "color": "var(--red)",
+            "throttled_status": throttled_status,
+        }
+    elif temp >= TEMP_CRITICAL:
+        return {
+            "temp_c": temp,
+            "level": "critical",
+            "message": f"CPU at {temp}°C — immediate action needed",
+            "color": "var(--orange)",
+            "throttled_status": throttled_status,
+        }
+    elif temp >= TEMP_WARNING:
+        return {
+            "temp_c": temp,
+            "level": "warning",
+            "message": f"CPU at {temp}°C — consider improving cooling",
+            "color": "var(--yellow)",
+            "throttled_status": throttled_status,
+        }
+    else:
+        return {
+            "temp_c": temp,
+            "level": "normal",
+            "message": None,
+            "color": "var(--green)",
+            "throttled_status": throttled_status,
+        }
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Power Status (Low Voltage Warning)
+# ═══════════════════════════════════════════════════════════════════════════
+def get_power_status() -> dict:
+    """
+    Read Pi voltage/frequency throttle status.
+
+    Returns:
+        undervoltage_occurred: bool - Has undervoltage happened?
+        undervoltage_now: bool - Currently experiencing undervoltage?
+        frequency_capped_occurred: bool - Has frequency been capped?
+        frequency_capped_now: bool - Currently capped?
+        throttled_now: bool - Currently throttled?
+        available: bool - Is power monitoring available?
+    """
+    # Method 1: vcgencmd get_throttled (Pi-specific)
+    throttled = _run("vcgencmd get_throttled 2>/dev/null")
+
+    if throttled and "throttled=0x" in throttled:
+        try:
+            value = int(throttled.split("=")[1].strip(), 16)
+            return {
+                "available": True,
+                "undervoltage_occurred": bool(value & (1 << 0)),
+                "frequency_capped_occurred": bool(value & (1 << 1)),
+                "throttled_occurred": bool(value & (1 << 2)),
+                "undervoltage_now": bool(value & (1 << 16)),
+                "frequency_capped_now": bool(value & (1 << 17)),
+                "throttled_now": bool(value & (1 << 18)),
+                "throttled_raw": throttled.strip(),
+            }
+        except (ValueError, IndexError):
+            pass
+
+    return {
+        "available": False,
+        "undervoltage_occurred": False,
+        "frequency_capped_occurred": False,
+        "throttled_now": False,
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# System Stability & Critical Services
+# ═══════════════════════════════════════════════════════════════════════════
+def get_critical_services_status() -> list:
+    """
+    Check if critical system services are running.
+
+    Monitors: systemd-journald, dbus, cron, systemd-networkd (or networking)
+    Returns list of failed critical services.
+    """
+    critical = ["systemd-journald", "dbus", "cron"]
+    # Add networking service (varies by distro)
+    critical.append(
+        "systemd-networkd"
+        if _read_file("/etc/os-release", "").find("systemd-networkd") >= 0
+        else "networking"
+    )
+
+    failed = []
+    for svc in critical:
+        active = _run(f"systemctl is-active {svc} 2>/dev/null")
+        if active != "active":
+            failed.append({"name": svc, "state": active or "unknown", "critical": True})
+    return failed
+
+
+def get_system_stability() -> dict:
+    """
+    Detect system-wide issues:
+    - OOM killer activity
+    - Kernel panics / critical errors
+    - Service restart loops
+    """
+    issues = []
+
+    # Check for recent OOM events
+    oom_check = _run(
+        "journalctl -p err -n 50 --no-pager 2>/dev/null | grep -i 'out of memory' | tail -1"
+    )
+    if oom_check:
+        issues.append(
+            {
+                "type": "oom",
+                "severity": "critical",
+                "message": "Out of memory condition detected",
+            }
+        )
+
+    # Check for kernel critical errors
+    panic_check = _run("journalctl -p crit -n 20 --no-pager 2>/dev/null | tail -1")
+    if panic_check and "kernel" in panic_check.lower():
+        issues.append(
+            {"type": "kernel", "severity": "critical", "message": panic_check[:100]}
+        )
+
+    # Check for service restart loops (>5 restarts in recent logs)
+    restart_count = _run(
+        "journalctl -p warning -n 100 --no-pager 2>/dev/null | grep -c 'restart job'"
+    )
+    try:
+        restart_count = int(restart_count or 0)
+    except ValueError:
+        restart_count = 0
+
+    if restart_count > 5:
+        issues.append(
+            {
+                "type": "restart_loop",
+                "severity": "warning",
+                "message": f"Service restart loop detected ({restart_count} restarts)",
+            }
+        )
+
+    return {"stable": len(issues) == 0, "issues": issues}
+    """
+    Read Pi voltage/frequency throttle status.
+
+    Returns:
+        undervoltage_occurred: bool - Has undervoltage happened?
+        undervoltage_now: bool - Currently experiencing undervoltage?
+        frequency_capped_occurred: bool - Has frequency been capped?
+        frequency_capped_now: bool - Currently capped?
+        throttled_now: bool - Currently throttled?
+        available: bool - Is power monitoring available?
+    """
+    # Method 1: vcgencmd get_throttled (Pi-specific)
+    throttled = _run("vcgencmd get_throttled 2>/dev/null")
+
+    if throttled and "throttled=0x" in throttled:
+        try:
+            value = int(throttled.split("=")[1].strip(), 16)
+            return {
+                "available": True,
+                "undervoltage_occurred": bool(value & (1 << 0)),
+                "frequency_capped_occurred": bool(value & (1 << 1)),
+                "throttled_occurred": bool(value & (1 << 2)),
+                "undervoltage_now": bool(value & (1 << 16)),
+                "frequency_capped_now": bool(value & (1 << 17)),
+                "throttled_now": bool(value & (1 << 18)),
+                "throttled_raw": throttled.strip(),
+            }
+        except (ValueError, IndexError):
+            pass
+
+    return {
+        "available": False,
+        "undervoltage_occurred": False,
+        "frequency_capped_occurred": False,
+        "throttled_now": False,
+    }
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -863,10 +1091,14 @@ def api_boot():
 def api_status():
     """Primary polling endpoint — fast-changing metrics."""
     net = get_network()
+    temp_status = get_temperature_status()
+    power_status = get_power_status()
     return jsonify(
         {
             "cpu": get_cpu_usage(),
             "temperature": get_cpu_temperature(),
+            "temperature_status": temp_status,
+            "power_status": power_status,
             "memory": get_memory(),
             "uptime": get_uptime(),
             "network_rates": net["rates"],
@@ -1030,6 +1262,22 @@ def api_ports():
     return jsonify(get_open_ports())
 
 
+@app.route("/api/system-health")
+@require_auth
+def api_system_health():
+    """Return system health status: critical services and stability checks."""
+    critical_services = get_critical_services_status()
+    stability = get_system_stability()
+    return jsonify(
+        {
+            "stable": stability["stable"],
+            "issues": stability["issues"],
+            "critical_services_failed": critical_services,
+            "all_critical_ok": len(critical_services) == 0,
+        }
+    )
+
+
 @app.route("/api/system-errors")
 @require_auth
 def api_system_errors():
@@ -1061,7 +1309,7 @@ if __name__ == "__main__":
 
     print(f"""
 \033[36m╔══════════════════════════════════════════════════╗
-║   RPi\033[33mMonitor\033[36m · v2.1.0                              ║
+║   RPi\033[33mMonitor\033[36m · v2.2.0                              ║
 ║   CoreConduit Consulting Services                 ║
 ╠══════════════════════════════════════════════════╣\033[0m
   Device:   {info['model']} [{marker}]
