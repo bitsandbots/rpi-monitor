@@ -1,4 +1,4 @@
-# RPi**Monitor** v2.0.1
+# RPi**Monitor** v2.2.0
 
 A lightweight, self-hosted Raspberry Pi system monitor and service control console written in Python. Single-file Flask backend, zero JavaScript dependencies, no build step.
 
@@ -26,6 +26,12 @@ Built for [CoreConduit Consulting Services](https://coreconduit.com) infrastruct
 - Hardware detection at boot (model, SoC, revision, architecture)
 - Event log (in-memory ring buffer, viewable in Logs tab)
 - Connection-lost detection with automatic reconnect indicator
+
+### Hardware Health (v2.2.0)
+- **Temperature Alerts** — Automatic warnings at 70°C (warning), 80°C (critical), 85°C (throttling)
+- **Low Voltage Warning** — Detects under-voltage events and current voltage issues via `vcgencmd get_throttled`
+- **Service Failure Detection** — Monitors critical services and reports failures
+- **System Stability Checks** — Detects OOM events, kernel errors, and service restart loops
 
 ### UI
 - Boot animation sequence showing detected hardware
@@ -79,25 +85,33 @@ journalctl -u rpi-monitor -f
 sudo ./install.sh --uninstall
 ```
 
-## v2.1.0 — Release Notes
+## v2.2.0 — Release Notes
 
 **New Features:**
-- **Services + Ports merged view** — Open ports (0-9999) now displayed alongside monitored services
-  - Shows port number and protocol next to service name
-  - Unmapped ports shown with "+ Add" button to create service associations
-  - Service-port mapping for common services (ssh=22, nginx=80, mysql=3306, etc.)
-- **System errors in Logs tab** — Toggle to show journalctl error entries alongside event log
-  - Real-time system error monitoring from `journalctl -p err`
-  - Merged view combines application events and system errors
+- **Hardware Health Alerts** — Real-time monitoring with automatic alert cards on Overview tab
+  - Temperature alerts at 70°C (warning), 80°C (critical), 85°C (throttling)
+  - Low voltage warning via `vcgencmd get_throttled` (undervoltage, frequency capping)
+  - Critical service failure detection (systemd-journald, dbus, cron)
+  - System stability checks (OOM, kernel errors, restart loops)
 
 **New API Endpoints:**
-- `GET /api/ports` — List all listening TCP/UDP ports (0-9999)
-- `GET /api/system-errors` — Recent error-level journal entries
-- `GET /api/services-with-ports` — Merged services and ports data
-- `GET /api/logs?system=true` — Event log with system errors included
+- `GET /api/system-health` — System health status with critical services and stability checks
+- `GET /api/status` — Enhanced with `temperature_status` and `power_status` objects
 
 **Improvements:**
-- Self-hosted fonts for offline capability (from v2.0.1)
+- Alert cards auto-clear when conditions normalize
+- Temperature thresholds configurable in source (TEMP_WARNING=70, TEMP_CRITICAL=80, TEMP_THROTTLE=85)
+- Power status parses vcgencmd bit fields for current and historical events
+
+**Documentation:**
+- New `docs/alerts.md` — Complete hardware alerts guide
+- Updated `wiki/API-Reference.md` — New endpoint documentation
+
+### v2.1.0 (previous)
+
+- Services + Ports merged view
+- System errors in Logs tab
+- Self-hosted fonts for offline capability
 
 **What's unchanged:**
 - All existing API endpoints remain compatible

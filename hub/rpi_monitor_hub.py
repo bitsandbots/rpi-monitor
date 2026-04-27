@@ -26,7 +26,7 @@ from flask import Flask, jsonify, render_template, request, abort
 
 app = Flask(__name__)
 
-VERSION = "2.1.0"
+VERSION = "2.2.0"
 
 # ═══════════════════════════════════════════════════════════════════════════
 # Configuration

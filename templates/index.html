@@ -421,6 +421,20 @@ body {
 
     <!-- ══ OVERVIEW ══ -->
     <div class="panel active" id="panel-overview">
+      <!-- Alert Cards (hidden by default, shown when alerts active) -->
+      <div class="card" id="power-alert-card" style="--accent-color:var(--yellow);display:none">
+        <div class="card-hdr">⚠ Power Alert</div>
+        <div id="power-alert-msg" style="color:var(--text-secondary);font-size:12px"></div>
+      </div>
+      <div class="card" id="temp-alert-card" style="--accent-color:var(--orange);display:none">
+        <div class="card-hdr">🌡 Temperature Alert</div>
+        <div id="temp-alert-msg" style="color:var(--text-secondary);font-size:12px"></div>
+      </div>
+      <div class="card" id="health-alert-card" style="--accent-color:var(--red);display:none">
+        <div class="card-hdr">⚠ System Health Alert</div>
+        <div id="health-alert-msg" style="color:var(--text-secondary);font-size:12px"></div>
+      </div>
+
       <div class="gauges">
         <div class="card gauge-card" style="--accent-color:var(--blue)"><svg id="g-cpu" width="84" height="84"></svg><span class="gauge-label">CPU</span></div>
         <div class="card gauge-card" style="--accent-color:var(--green)"><svg id="g-temp" width="84" height="84"></svg><span class="gauge-label">Temp</span></div>
@@ -730,9 +744,72 @@ async function apiDelete(path) {
 // ════════════════════════════════════════════════════════════════════════
 // Data Refresh
 // ════════════════════════════════════════════════════════════════════════
+
+// ── Alert Checkers ──
+function checkPowerAlert(power) {
+  const card = $('power-alert-card');
+  const msg = $('power-alert-msg');
+  if (!power || !power.available) { card.style.display = 'none'; return; }
+
+  if (power.undervoltage_now) {
+    card.style.display = 'block';
+    msg.textContent = '⚡ Undervoltage detected! Input voltage < 4.65V — Use a high-quality 5V/3A power supply';
+    return true;
+  }
+  if (power.frequency_capped_now) {
+    card.style.display = 'block';
+    msg.textContent = '🐌 CPU throttled — ARM frequency capped due to power/thermal limits';
+    return true;
+  }
+  if (power.undervoltage_occurred) {
+    card.style.display = 'block';
+    msg.textContent = '⚡ Past undervoltage — Voltage dropped since boot, check power supply';
+    return true;
+  }
+  card.style.display = 'none';
+  return false;
+}
+
+function checkTempAlert(tempStatus) {
+  const card = $('temp-alert-card');
+  const msg = $('temp-alert-msg');
+  if (!tempStatus || tempStatus.level === 'normal') { card.style.display = 'none'; return false; }
+
+  card.style.display = 'block';
+  card.style.setProperty('--accent-color', tempStatus.color);
+  msg.textContent = tempStatus.message;
+  msg.style.color = tempStatus.color;
+  return true;
+}
+
+function checkHealthAlert(health) {
+  const card = $('health-alert-card');
+  const msg = $('health-alert-msg');
+
+  if (!health || (health.all_critical_ok && health.stable)) {
+    card.style.display = 'none';
+    return false;
+  }
+
+  card.style.display = 'block';
+  const issues = [];
+  if (!health.all_critical_ok && health.critical_services_failed) {
+    issues.push('Critical services down: ' + health.critical_services_failed.map(s => s.name).join(', '));
+  }
+  if (!health.stable && health.issues) {
+    health.issues.forEach(i => issues.push(i.message));
+  }
+  msg.textContent = issues.join(' | ');
+  return true;
+}
+
 async function refreshStatus() {
   const d = await api('status');
   if (!d) return;
+
+  // Check alerts
+  checkPowerAlert(d.power_status);
+  checkTempAlert(d.temperature_status);
 
   // History
   cpuH.push(d.cpu.usage); if (cpuH.length > MAX_H) cpuH.shift();
@@ -891,6 +968,17 @@ async function refreshTab() {
   }
 
   if (activeTab === 'logs') refreshLogs();
+
+  // Poll system health (less frequent - every 5th tab refresh)
+  if (activeTab === 'overview' && Date.now() % 5 === 0) {
+    pollHealthStatus();
+  }
+}
+
+// ── Health Status Polling (separate endpoint, less frequent) ──
+async function pollHealthStatus() {
+  const health = await api('system-health');
+  if (health) checkHealthAlert(health);
 }
 
 // ── Logs ──
