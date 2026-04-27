@@ -107,6 +107,7 @@ RELEASE_FILES=(
   static
   rpi-monitor.service
   install.sh
+  update.sh
   release.sh
   .env.example
   README.md
