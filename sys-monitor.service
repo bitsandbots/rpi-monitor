@@ -24,7 +24,7 @@ Environment=SYSMONITOR_PORT=8585
 # Hardening
 ProtectSystem=strict
 ReadWritePaths=/opt/sys-monitor
-ProtectHome=true
+ProtectHome=read-only
 NoNewPrivileges=false
 PrivateTmp=true
 

@@ -338,6 +338,58 @@ def _parse_systemctl_failed(output: str, scope: str) -> list:
     return failed
 
 
+USER_TIMER_JOBS = [
+    {"service": "backup-stack.service", "timer": "backup-stack.timer", "label": "backup-stack"},
+]
+
+
+def _user_systemctl(args: str) -> str:
+    """Run a `systemctl --user` command as coreconduit from this root process."""
+    return _run(
+        f"sudo -u coreconduit env XDG_RUNTIME_DIR=/run/user/1000 systemctl --user {args} 2>/dev/null"
+    )
+
+
+def get_scheduled_job_status() -> list:
+    """
+    Check timer-triggered oneshot jobs (e.g. backup-stack) for health.
+
+    A healthy oneshot spends nearly all its time "inactive" between runs, so
+    `systemctl is-active` on the *service* can't distinguish healthy-but-idle
+    from dead — unlike a long-running daemon. Instead this checks that the
+    job's *timer* is still active (scheduling hasn't silently stopped) and
+    that the service's last completed run didn't fail (`Result` != success).
+    A service that has never yet been triggered by systemd also reports
+    Result=success (nothing has failed yet), so this doesn't false-positive
+    on a freshly-created job before its first scheduled run.
+    """
+    failed = []
+    for job in USER_TIMER_JOBS:
+        timer_state = _user_systemctl(f"is-active {job['timer']}")
+        if timer_state != "active":
+            failed.append(
+                {
+                    "name": job["label"],
+                    "state": f"timer {timer_state or 'unknown'}",
+                    "critical": True,
+                    "scope": "user",
+                }
+            )
+            continue
+
+        result = _user_systemctl(f"show {job['service']} -p Result --value")
+        if result and result != "success":
+            failed.append(
+                {
+                    "name": job["label"],
+                    "state": f"last run: {result}",
+                    "critical": True,
+                    "scope": "user",
+                }
+            )
+    return failed
+
+
 def get_critical_services_status() -> list:
     """
     Check if critical system services are running, plus any other failed unit.
@@ -348,6 +400,8 @@ def get_critical_services_status() -> list:
     not just the fixed short list above — this is what would have surfaced the
     espocrm-daemon and nextcloud-taskprocessing-worker restart-loop incidents on
     the dashboard automatically instead of only in `journalctl`.
+    Also checks USER_TIMER_JOBS (see get_scheduled_job_status) for jobs whose
+    health can't be read from a plain is-active check.
     """
     critical = ["systemd-journald", "dbus", "cron"]
     # Add the networking service that actually exists on this system
@@ -365,11 +419,10 @@ def get_critical_services_status() -> list:
     system_failed = _run("systemctl --failed --plain --no-legend 2>/dev/null")
     failed.extend(_parse_systemctl_failed(system_failed, "system"))
 
-    user_failed = _run(
-        "sudo -u coreconduit env XDG_RUNTIME_DIR=/run/user/1000 "
-        "systemctl --user --failed --plain --no-legend 2>/dev/null"
-    )
+    user_failed = _user_systemctl("--failed --plain --no-legend")
     failed.extend(_parse_systemctl_failed(user_failed, "user"))
+
+    failed.extend(get_scheduled_job_status())
 
     return failed
 
