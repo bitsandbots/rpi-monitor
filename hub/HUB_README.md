@@ -1,8 +1,8 @@
-# RPiMonitor Hub — Lord of the RPi Monitors
+# SysMonitor Hub — Fleet Management Console
 
-> One dashboard to discover, connect, and bind them all.
+> Aggregate dashboard for multiple SysMonitor nodes.
 
-A central aggregation console for managing multiple [RPiMonitor v2](https://coreconduit.io) instances across your network. Monitor CPU, temperature, memory, and services for your entire fleet of Raspberry Pi and Linux devices from a single pane.
+A central aggregation console for managing multiple [SysMonitor v2](https://coreconduit.com) instances across your network. Monitor CPU, temperature, memory, and services for your entire fleet of Linux devices from a single pane.
 
 **CoreConduit Consulting Services** · MIT License
 
@@ -11,12 +11,12 @@ A central aggregation console for managing multiple [RPiMonitor v2](https://core
 ## Features
 
 - **Fleet Overview** — Real-time aggregate metrics (avg CPU, max temp, avg RAM) across all connected nodes
-- **Network Discovery (Signal Fires)** — Scan any /24 subnet to auto-detect PiMonitor instances via `/api/ping`
+- **Network Discovery (Signal Fires)** — Scan any /24 subnet to auto-detect SysMonitor instances via `/api/ping`
 - **Node Drill-Down** — Click any node to view full details: system info, services, processes, storage, logs
 - **Service Control** — Start/stop/restart services on remote nodes directly from the hub
 - **Persistent Registry** — Node list saved to `hub_nodes.json`, survives restarts
 - **Background Polling** — Parallel health checks via ThreadPoolExecutor, configurable interval
-- **Auth Passthrough** — Per-node bearer token support for secured PiMonitor instances
+- **Auth Passthrough** — Per-node bearer token support for secured SysMonitor instances
 
 ## Quick Start
 
@@ -25,7 +25,7 @@ A central aggregation console for managing multiple [RPiMonitor v2](https://core
 pip install flask requests
 
 # Run
-python3 rpi_monitor_hub.py
+python3 sys_monitor_hub.py
 
 # Open → http://localhost:8686
 ```
@@ -34,13 +34,13 @@ python3 rpi_monitor_hub.py
 
 ```
 ┌──────────────────────────┐
-│    RPiMonitor Hub :8686   │  ← You are here
+│    SysMonitor Hub :8686   │  ← You are here
 │    (Flask + Poller)      │
 └──────┬───────┬───────┬───┘
        │       │       │
        ▼       ▼       ▼
    ┌──────┐ ┌──────┐ ┌──────┐
-   │ Pi 1 │ │ Pi 2 │ │ Pi N │  ← RPiMonitor v2 instances
+   │Node 1│ │Node 2│ │Node N│  ← SysMonitor v2 instances
    │ :8585│ │ :8585│ │ :8585│
    └──────┘ └──────┘ └──────┘
 ```
@@ -53,20 +53,20 @@ All configuration via environment variables:
 
 | Variable | Default | Description |
 |---|---|---|
-| `PIHUB_HOST` | `0.0.0.0` | Bind address |
-| `PIHUB_PORT` | `8686` | Listen port |
-| `PIHUB_TOKEN` | *(empty)* | Bearer token for hub API auth |
-| `PIHUB_POLL_INTERVAL` | `5` | Seconds between fleet polls |
-| `PIHUB_TIMEOUT` | `4` | HTTP timeout per node request |
-| `PIHUB_DISCOVERY_PORT` | `8585` | Default port to scan during discovery |
-| `PIHUB_NODES_FILE` | `./hub_nodes.json` | Path to persisted node registry |
+| `SYSHUB_HOST` | `0.0.0.0` | Bind address |
+| `SYSHUB_PORT` | `8686` | Listen port |
+| `SYSHUB_TOKEN` | *(empty)* | Bearer token for hub API auth |
+| `SYSHUB_POLL_INTERVAL` | `5` | Seconds between fleet polls |
+| `SYSHUB_TIMEOUT` | `4` | HTTP timeout per node request |
+| `SYSHUB_DISCOVERY_PORT` | `8585` | Default port to scan during discovery |
+| `SYSHUB_NODES_FILE` | `./hub_nodes.json` | Path to persisted node registry |
 
 ## systemd
 
 ```bash
-sudo cp rpi-monitor-hub.service /etc/systemd/system/
+sudo cp sys-monitor-hub.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now rpi-monitor-hub
+sudo systemctl enable --now sys-monitor-hub
 ```
 
 ## API Reference
@@ -96,7 +96,4 @@ sudo systemctl enable --now rpi-monitor-hub
 
 ---
 
-*"Three Pis for the server-kings under the sky,
-Seven for the sensor-lords in their halls of stone,
-Nine for home-lab mortals doomed to SSH,
-One Hub to find them all, and in the dashboard bind them."*
+*"One Hub to find them all, and in the dashboard bind them."*

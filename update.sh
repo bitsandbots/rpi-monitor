@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# update.sh — RPiMonitor auto-updater
+# update.sh — SysMonitor auto-updater
 # Checks GitHub for the latest release, compares against installed version,
 # downloads + verifies the tarball, and reinstalls if newer.
 #
@@ -12,20 +12,20 @@
 #   sudo ./update.sh --no-verify  # Skip SHA-256 checksum verification
 #
 # Cron (daily at 3am):
-#   0 3 * * * root /opt/rpi-monitor/update.sh --hub >> /var/log/rpi-monitor-update.log 2>&1
+#   0 3 * * * root /opt/sys-monitor/update.sh --hub >> /var/log/sys-monitor-update.log 2>&1
 #
 # CoreConduit Consulting Services — MIT License
 
 set -euo pipefail
 
 # ── Config ────────────────────────────────────────────────────────────────────
-REPO="bitsandbots/rpi-monitor"
-INSTALL_DIR="/opt/rpi-monitor"
-NODE_SERVICE="rpi-monitor"
-HUB_SERVICE="rpi-monitor-hub"
+REPO="coreconduit/sys-monitor"
+INSTALL_DIR="/opt/sys-monitor"
+NODE_SERVICE="sys-monitor"
+HUB_SERVICE="sys-monitor-hub"
 API_URL="https://api.github.com/repos/${REPO}/releases/latest"
-LOG_FILE="/var/log/rpi-monitor-update.log"
-WORK_DIR="/tmp/rpi-monitor-update-$$"
+LOG_FILE="/var/log/sys-monitor-update.log"
+WORK_DIR="/tmp/sys-monitor-update-$$"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RED='\033[0;31m'
@@ -73,7 +73,7 @@ preflight() {
 
 # ── Version helpers ───────────────────────────────────────────────────────────
 
-# Read VERSION from an installed rpi_monitor.py (node or hub)
+# Read VERSION from an installed sys_monitor.py (node or hub)
 read_installed_version() {
   local file="$1"
   if [[ -f "$file" ]]; then
@@ -108,7 +108,7 @@ print(data['tag_name'])
 
   LATEST_VERSION="${LATEST_TAG#v}"  # strip leading 'v'
 
-  # Find tarball asset URL (matches rpi-monitor-<version>.tar.gz)
+  # Find tarball asset URL (matches sys-monitor-<version>.tar.gz)
   TARBALL_URL=$(echo "$response" | python3 -c "
 import sys, json
 data = json.load(sys.stdin)
@@ -141,7 +141,7 @@ for a in assets:
 
 # ── Download + verify ─────────────────────────────────────────────────────────
 download_and_verify() {
-  local archive_name="rpi-monitor-${LATEST_VERSION}.tar.gz"
+  local archive_name="sys-monitor-${LATEST_VERSION}.tar.gz"
   local archive_path="${WORK_DIR}/${archive_name}"
 
   mkdir -p "$WORK_DIR"
@@ -181,9 +181,9 @@ run_install() {
   info "Extracting archive..."
   tar -xzf "$ARCHIVE_PATH" -C "$WORK_DIR"
 
-  # Find extracted directory (rpi-monitor-<version>/ or rpi-monitor-<tag>/)
+  # Find extracted directory (sys-monitor-<version>/ or sys-monitor-<tag>/)
   local extract_dir
-  extract_dir=$(find "$WORK_DIR" -maxdepth 1 -type d -name "rpi-monitor-*" | head -1)
+  extract_dir=$(find "$WORK_DIR" -maxdepth 1 -type d -name "sys-monitor-*" | head -1)
   [[ -n "$extract_dir" ]] || die "Could not find extracted directory in $WORK_DIR"
 
   info "Running install.sh ${install_flags[*]:-}..."
@@ -200,7 +200,7 @@ trap cleanup EXIT
 # ── Main ──────────────────────────────────────────────────────────────────────
 main() {
   echo ""
-  echo "  Rpi|Monitor  Auto-Updater"
+  echo "  Sys|Monitor  Auto-Updater"
   echo "  CoreConduit Consulting Services"
   echo ""
 
@@ -208,8 +208,8 @@ main() {
 
   # Read installed versions
   local node_installed hub_installed
-  node_installed=$(read_installed_version "${INSTALL_DIR}/rpi_monitor.py")
-  hub_installed=$(read_installed_version "${INSTALL_DIR}/hub/rpi_monitor_hub.py")
+  node_installed=$(read_installed_version "${INSTALL_DIR}/sys_monitor.py")
+  hub_installed=$(read_installed_version "${INSTALL_DIR}/hub/sys_monitor_hub.py")
 
   info "Installed: node v${node_installed}  hub v${hub_installed}"
   info "Checking GitHub for latest release..."
@@ -253,8 +253,8 @@ main() {
 
   # Confirm post-install version
   local node_after hub_after
-  node_after=$(read_installed_version "${INSTALL_DIR}/rpi_monitor.py")
-  hub_after=$(read_installed_version "${INSTALL_DIR}/hub/rpi_monitor_hub.py")
+  node_after=$(read_installed_version "${INSTALL_DIR}/sys_monitor.py")
+  hub_after=$(read_installed_version "${INSTALL_DIR}/hub/sys_monitor_hub.py")
 
   echo ""
   ok "Update complete."

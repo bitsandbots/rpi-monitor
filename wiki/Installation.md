@@ -5,7 +5,7 @@
 - Python 3.11+
 - Flask 3.0+ (`pip install flask`)
 - systemd (for service install)
-- Linux with `/proc` and `/sys` (Raspberry Pi OS, Debian, Ubuntu)
+- Linux with `/proc` and `/sys` (Debian, Ubuntu Linux)
 
 ---
 
@@ -14,8 +14,8 @@
 Clone the repo and run `install.sh` as root:
 
 ```bash
-git clone https://github.com/bitsandbots/rpi-monitor
-cd rpi-monitor
+git clone https://github.com/bitsandbots/sys-monitor
+cd sys-monitor
 sudo ./install.sh
 ```
 
@@ -30,7 +30,7 @@ sudo ./install.sh
 
 The installer will:
 1. Check Python 3.11+, pip3, and systemctl are present
-2. Copy files to `/opt/rpi-monitor`
+2. Copy files to `/opt/sys-monitor`
 3. Install Python dependencies via pip
 4. Install and enable the systemd service
 5. Wait up to 10 seconds for the health endpoint to respond
@@ -39,16 +39,16 @@ The installer will:
 
 ## Install from Release Tarball
 
-Download a release from [GitHub Releases](https://github.com/bitsandbots/rpi-monitor/releases):
+Download a release from [GitHub Releases](https://github.com/bitsandbots/sys-monitor/releases):
 
 ```bash
-curl -LO https://github.com/bitsandbots/rpi-monitor/releases/download/v2.0.0/rpi-monitor-2.0.0.tar.gz
+curl -LO https://github.com/bitsandbots/sys-monitor/releases/download/v2.0.0/sys-monitor-2.0.0.tar.gz
 # Verify checksum
-curl -LO https://github.com/bitsandbots/rpi-monitor/releases/download/v2.0.0/rpi-monitor-2.0.0.sha256
-sha256sum -c rpi-monitor-2.0.0.sha256
+curl -LO https://github.com/bitsandbots/sys-monitor/releases/download/v2.0.0/sys-monitor-2.0.0.sha256
+sha256sum -c sys-monitor-2.0.0.sha256
 
-tar -xzf rpi-monitor-2.0.0.tar.gz
-cd rpi-monitor-2.0.0
+tar -xzf sys-monitor-2.0.0.tar.gz
+cd sys-monitor-2.0.0
 sudo ./install.sh
 ```
 
@@ -61,26 +61,26 @@ sudo ./install.sh
 pip3 install flask --break-system-packages
 
 # Run directly
-python3 rpi_monitor.py
+python3 sys_monitor.py
 ```
 
-Access at `http://<pi-ip>:8585`.
+Access at `http://<node-ip>:8585`.
 
 ---
 
 ## Install as systemd Service (Manual)
 
 ```bash
-sudo cp rpi-monitor.service /etc/systemd/system/
+sudo cp sys-monitor.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now rpi-monitor
+sudo systemctl enable --now sys-monitor
 ```
 
 Check status:
 
 ```bash
-sudo systemctl status rpi-monitor
-journalctl -u rpi-monitor -f
+sudo systemctl status sys-monitor
+journalctl -u sys-monitor -f
 ```
 
 ---
@@ -90,14 +90,14 @@ journalctl -u rpi-monitor -f
 If running as a non-root user, grant scoped sudoers access:
 
 ```
-# /etc/sudoers.d/rpi-monitor
-pimonitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl start ssh nginx docker ollama
-pimonitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop ssh nginx docker ollama
-pimonitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart ssh nginx docker ollama
-pimonitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl enable ssh nginx docker ollama
-pimonitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl disable ssh nginx docker ollama
-pimonitor ALL=(ALL) NOPASSWD: /sbin/reboot
-pimonitor ALL=(ALL) NOPASSWD: /sbin/shutdown
+# /etc/sudoers.d/sys-monitor
+sysmonitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl start ssh nginx docker ollama
+sysmonitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop ssh nginx docker ollama
+sysmonitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart ssh nginx docker ollama
+sysmonitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl enable ssh nginx docker ollama
+sysmonitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl disable ssh nginx docker ollama
+sysmonitor ALL=(ALL) NOPASSWD: /sbin/reboot
+sysmonitor ALL=(ALL) NOPASSWD: /sbin/shutdown
 ```
 
 List each service explicitly — do **not** use wildcards.
@@ -110,4 +110,4 @@ List each service explicitly — do **not** use wildcards.
 sudo ./install.sh --uninstall
 ```
 
-This stops and disables both services, removes unit files, and deletes `/opt/rpi-monitor`.
+This stops and disables both services, removes unit files, and deletes `/opt/sys-monitor`.

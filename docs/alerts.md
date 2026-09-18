@@ -25,37 +25,6 @@ v2.2.0 introduces real-time hardware monitoring with automated alerts for temper
 
 ---
 
-## Low Voltage Warning
-
-### Detection Method
-
-Reads `vcgencmd get_throttled` and parses the returned hex value:
-
-| Bit | Meaning | Status |
-|-----|---------|--------|
-| 0 | Undervoltage has occurred (past) | `undervoltage_occurred` |
-| 1 | Frequency capped has occurred (past) | `frequency_capped_occurred` |
-| 2 | Throttled has occurred (past) | `throttled_occurred` |
-| 16 | Undervoltage currently occurring | `undervoltage_now` ⚠️ |
-| 17 | Frequency capped currently | `frequency_capped_now` |
-| 18 | Currently throttled | `throttled_now` |
-
-### Alert Conditions
-
-| Condition | Severity | Message |
-|-----------|----------|---------|
-| `undervoltage_now = true` | Critical | "⚡ Undervoltage detected! Input voltage < 4.65V" |
-| `frequency_capped_now = true` | Warning | "🐌 CPU throttled — ARM frequency capped" |
-| `undervoltage_occurred = true` | Warning | "⚡ Past undervoltage — check power supply" |
-
-### Resolution
-
-- Use a high-quality 5V/3A power supply
-- Check USB cable quality (thick, short cables preferred)
-- Remove high-power peripherals
-
----
-
 ## System Health Monitoring
 
 ### Critical Services Monitored
@@ -100,8 +69,7 @@ Now includes `temperature_status` and `power_status` in the response:
     "temp_c": 52.3,
     "level": "normal",
     "message": null,
-    "color": "var(--green)",
-    "throttled_status": null
+    "color": "var(--green)"
   },
   "power_status": {
     "available": true,
@@ -109,8 +77,7 @@ Now includes `temperature_status` and `power_status` in the response:
     "frequency_capped_occurred": false,
     "undervoltage_now": false,
     "frequency_capped_now": false,
-    "throttled_now": false,
-    "throttled_raw": "throttled=0x0"
+    "throttled_now": false
   },
   "memory": { ... },
   "uptime": { ... }
@@ -163,12 +130,12 @@ All cards clear automatically when conditions normalize.
 
 ## Configuration
 
-Temperature thresholds are configurable in `rpi_monitor.py`:
+Temperature thresholds are configurable in `sys_monitor.py`:
 
 ```python
 TEMP_WARNING = 70   # °C - Start warning
 TEMP_CRITICAL = 80  # °C - Red alert
-TEMP_THROTTLE = 85  # °C - Pi throttles automatically
+TEMP_THROTTLE = 85  # °C - CPU throttles automatically
 ```
 
 To modify, edit the values in the source file and restart the service.
@@ -184,14 +151,6 @@ To modify, edit the values in the source file and restart the service.
 echo "90000" | sudo tee /sys/class/thermal/thermal_zone0/temp
 ```
 
-### Simulate Undervoltage (Simulated)
-
-The throttled register can be read but not written to. Test by checking the alert card appears when a real Pi under-voltage event occurs:
-
-```bash
-vcgencmd get_throttled
-# If undervoltage: throttled=0x50000 (bits 0 and 16 set)
-```
 
 ---
 

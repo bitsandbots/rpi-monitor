@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install.sh — RPiMonitor installer
+# install.sh — SysMonitor installer
 # Usage:
 #   sudo ./install.sh           # Install node agent only
 #   sudo ./install.sh --hub     # Install node agent + hub
@@ -11,9 +11,9 @@
 set -euo pipefail
 
 # ── Constants ────────────────────────────────────────────────────────────────
-INSTALL_DIR="/opt/rpi-monitor"
-NODE_SERVICE="rpi-monitor"
-HUB_SERVICE="rpi-monitor-hub"
+INSTALL_DIR="/opt/sys-monitor"
+NODE_SERVICE="sys-monitor"
+HUB_SERVICE="sys-monitor-hub"
 NODE_PORT=8585
 HUB_PORT=8686
 PYTHON="${PYTHON:-python3}"
@@ -30,16 +30,63 @@ ok()    { echo -e "${GRN}[ OK ]${NC}  $*"; }
 warn()  { echo -e "${YLW}[WARN]${NC}  $*"; }
 die()   { echo -e "${RED}[FAIL]${NC}  $*" >&2; exit 1; }
 
+# ── Helpers ─────────────────────────────────────────────────────────────────
+# Install pip deps, with or without --break-system-packages (PEP 668)
+_pip_install() {
+  local req_file="$1"
+  local break_flag=""
+  if pip3 install --help 2>&1 | grep -q -- '--break-system-packages'; then
+    break_flag="--break-system-packages"
+  fi
+  pip3 install --quiet $break_flag --ignore-installed -r "$req_file"
+}
+
+# Open a firewall port via ufw or firewalld (graceful no-op if neither present)
+_open_port() {
+  local port="$1"
+  local proto="${2:-tcp}"
+
+  if command -v ufw >/dev/null 2>&1 && ufw status 2>/dev/null | grep -q '^Status: active'; then
+    if ufw status 2>/dev/null | grep -q "${port}/${proto}"; then
+      info "Firewall: port ${port}/${proto} already open (ufw)"
+    else
+      ufw allow "${port}/${proto}" >/dev/null 2>&1 \
+        && ok "Firewall: opened port ${port}/${proto} (ufw)" \
+        || warn "Firewall: failed to open ${port}/${proto} — check ufw manually"
+    fi
+  elif command -v firewall-cmd >/dev/null 2>&1 && systemctl is-active firewalld &>/dev/null; then
+    firewall-cmd --add-port="${port}/${proto}" --permanent >/dev/null 2>&1 \
+      && firewall-cmd --reload >/dev/null 2>&1 \
+      && ok "Firewall: opened port ${port}/${proto} (firewalld)" \
+      || warn "Firewall: failed to open ${port}/${proto} — check firewalld manually"
+  fi
+}
+
+# Remove a firewall port rule (ufw or firewalld)
+_close_port() {
+  local port="$1"
+  local proto="${2:-tcp}"
+
+  if command -v ufw >/dev/null 2>&1 && ufw status 2>/dev/null | grep -q '^Status: active'; then
+    ufw delete allow "${port}/${proto}" >/dev/null 2>&1 || true
+  elif command -v firewall-cmd >/dev/null 2>&1 && systemctl is-active firewalld &>/dev/null; then
+    firewall-cmd --remove-port="${port}/${proto}" --permanent >/dev/null 2>&1 || true
+    firewall-cmd --reload >/dev/null 2>&1 || true
+  fi
+}
+
 # ── Argument parsing ─────────────────────────────────────────────────────────
 INSTALL_NODE=true
 INSTALL_HUB=false
 DO_UNINSTALL=false
+CHECK_ONLY=false
 
 for arg in "$@"; do
   case "$arg" in
     --hub)        INSTALL_HUB=true ;;
     --hub-only)   INSTALL_NODE=false; INSTALL_HUB=true ;;
     --uninstall)  DO_UNINSTALL=true ;;
+    --check)      CHECK_ONLY=true ;;
     --help|-h)
       sed -n '2,10p' "$0" | sed 's/^# //'
       exit 0
@@ -52,8 +99,16 @@ done
 preflight() {
   [[ $EUID -eq 0 ]] || die "Run as root: sudo $0 $*"
 
-  command -v "$PYTHON" >/dev/null 2>&1 || die "python3 not found. Install with: apt install python3"
-  command -v pip3     >/dev/null 2>&1 || die "pip3 not found. Install with: apt install python3-pip"
+  command -v "$PYTHON" >/dev/null 2>&1 || {
+    info "python3 not found, installing..."
+    apt-get update -qq && apt-get install -y -qq python3 || die "Failed to install python3"
+  }
+
+  if ! command -v pip3 >/dev/null 2>&1; then
+    info "pip3 not found, installing python3-pip..."
+    apt-get update -qq && apt-get install -y -qq python3-pip || die "Failed to install python3-pip"
+  fi
+
   command -v systemctl >/dev/null 2>&1 || die "systemctl not found — systemd required"
 
   PYVER=$("$PYTHON" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
@@ -68,7 +123,7 @@ preflight() {
 
 # ── Uninstall ────────────────────────────────────────────────────────────────
 do_uninstall() {
-  info "Uninstalling RPiMonitor..."
+  info "Uninstalling SysMonitor..."
 
   for svc in "$NODE_SERVICE" "$HUB_SERVICE"; do
     if systemctl is-active "$svc" &>/dev/null; then
@@ -87,33 +142,38 @@ do_uninstall() {
 
   systemctl daemon-reload
 
+  _close_port "$NODE_PORT"
+  _close_port "$HUB_PORT"
+
   if [[ -d "$INSTALL_DIR" ]]; then
     rm -rf "$INSTALL_DIR"
     ok "Removed $INSTALL_DIR"
   fi
 
-  ok "RPiMonitor uninstalled."
+  ok "SysMonitor uninstalled."
 }
 
 # ── Install node agent ────────────────────────────────────────────────────────
 install_node() {
-  info "Installing RPiMonitor node agent → $INSTALL_DIR"
+  info "Installing SysMonitor node agent → $INSTALL_DIR"
 
   mkdir -p "$INSTALL_DIR/templates"
   mkdir -p "$INSTALL_DIR/static/fonts"
-  cp rpi_monitor.py "$INSTALL_DIR/"
+  cp sys_monitor.py "$INSTALL_DIR/"
   cp templates/index.html "$INSTALL_DIR/templates/"
   # Copy static files (fonts for offline capability)
   if [[ -d static ]]; then
     cp -r static/* "$INSTALL_DIR/static/" 2>/dev/null || true
   fi
   cp requirements.txt "$INSTALL_DIR/"
+  cp services.json "$INSTALL_DIR/" 2>/dev/null || true
   [[ -f .env.example ]] && cp .env.example "$INSTALL_DIR/"
 
-  pip3 install --quiet --break-system-packages -r requirements.txt
+  _pip_install "$INSTALL_DIR/requirements.txt"
   ok "Dependencies installed"
 
-  cp rpi-monitor.service /etc/systemd/system/
+  _open_port "$NODE_PORT"
+  cp sys-monitor.service /etc/systemd/system/
   systemctl daemon-reload
   systemctl enable "$NODE_SERVICE"
   systemctl start  "$NODE_SERVICE"
@@ -133,11 +193,11 @@ install_node() {
 
 # ── Install hub ───────────────────────────────────────────────────────────────
 install_hub() {
-  info "Installing RPiMonitor Hub → $INSTALL_DIR/hub"
+  info "Installing SysMonitor Hub → $INSTALL_DIR/hub"
 
   mkdir -p "$INSTALL_DIR/hub/templates"
   mkdir -p "$INSTALL_DIR/hub/static/fonts"
-  cp hub/rpi_monitor_hub.py "$INSTALL_DIR/hub/"
+  cp hub/sys_monitor_hub.py "$INSTALL_DIR/hub/"
   cp hub/templates/hub.html "$INSTALL_DIR/hub/templates/"
   # Copy static files (fonts for offline capability)
   if [[ -d static ]]; then
@@ -146,10 +206,11 @@ install_hub() {
   cp hub/requirements.txt "$INSTALL_DIR/hub/"
   [[ -f hub/HUB_README.md ]] && cp hub/HUB_README.md "$INSTALL_DIR/hub/"
 
-  pip3 install --quiet --break-system-packages -r hub/requirements.txt
+  _pip_install "hub/requirements.txt"
   ok "Hub dependencies installed"
 
-  cp hub/rpi-monitor-hub.service /etc/systemd/system/
+  _open_port "$HUB_PORT"
+  cp hub/sys-monitor-hub.service /etc/systemd/system/
   systemctl daemon-reload
   systemctl enable "$HUB_SERVICE"
   systemctl start  "$HUB_SERVICE"
@@ -169,7 +230,7 @@ install_hub() {
 # ── Main ─────────────────────────────────────────────────────────────────────
 main() {
   echo ""
-  echo "  RPi|Monitor  Installer"
+  echo "  Sys|Monitor  Installer"
   echo "  CoreConduit Consulting Services"
   echo ""
 
@@ -180,6 +241,11 @@ main() {
   fi
 
   preflight
+
+  if $CHECK_ONLY; then
+    ok "Preflight check passed — system is ready for installation."
+    exit 0
+  fi
 
   $INSTALL_NODE && install_node
   $INSTALL_HUB  && install_hub

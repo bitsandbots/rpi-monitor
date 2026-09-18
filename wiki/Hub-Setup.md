@@ -1,13 +1,13 @@
 # Hub Setup
 
-The Hub (`rpi_monitor_hub.py`) is an optional fleet layer that aggregates multiple RPiMonitor node agents into a single dashboard.
+The Hub (`sys_monitor_hub.py`) is an optional fleet layer that aggregates multiple SysMonitor node agents into a single dashboard.
 
 ```
 ┌──────────────────────────┐
-│    RPiMonitor Hub :8686   │  ← central console
+│    SysMonitor Hub :8686   │  ← central console
 └──────┬───────┬───────┬───┘
        ▼       ▼       ▼
-   Pi A     Pi B     Pi N
+   Node A   Node B   Node N
    :8585    :8585    :8585
 ```
 
@@ -15,7 +15,7 @@ The Hub (`rpi_monitor_hub.py`) is an optional fleet layer that aggregates multip
 
 ## Install the Hub
 
-### On the same Pi as a node agent
+### On the same system as a node agent
 
 ```bash
 sudo ./install.sh --hub
@@ -33,7 +33,7 @@ sudo ./install.sh --hub-only
 
 ```bash
 pip3 install flask requests --break-system-packages
-python3 hub/rpi_monitor_hub.py
+python3 hub/sys_monitor_hub.py
 ```
 
 Open `http://<hub-ip>:8686`
@@ -44,7 +44,7 @@ Open `http://<hub-ip>:8686`
 
 ### Option 1 — Network Discovery (Signal Fires)
 
-In the hub dashboard, click **Discover** and enter your subnet (e.g. `192.168.1.0/24`). The hub will scan all 254 hosts in parallel and list any responding RPiMonitor agents.
+In the hub dashboard, click **Discover** and enter your subnet (e.g. `192.168.1.0/24`). The hub will scan all 254 hosts in parallel and list any responding SysMonitor agents.
 
 Via API:
 
@@ -59,7 +59,7 @@ curl -X POST http://hub:8686/api/discover \
 ```bash
 curl -X POST http://hub:8686/api/nodes \
   -H "Content-Type: application/json" \
-  -d '{"host": "192.168.1.42", "port": 8585, "label": "Pi-Kitchen"}'
+  -d '{"host": "192.168.1.42", "port": 8585, "label": "Node-Kitchen"}'
 ```
 
 With a per-node token:
@@ -67,14 +67,14 @@ With a per-node token:
 ```bash
 curl -X POST http://hub:8686/api/nodes \
   -H "Content-Type: application/json" \
-  -d '{"host": "192.168.1.43", "port": 8585, "label": "Pi-Garage", "token": "my-secret"}'
+  -d '{"host": "192.168.1.43", "port": 8585, "label": "Node-Garage", "token": "my-secret"}'
 ```
 
 ---
 
 ## Polling Behavior
 
-The hub polls each registered node every `PIHUB_POLL_INTERVAL` seconds (default 5). It uses a `ThreadPoolExecutor` with up to 8 concurrent workers, so polling scales across a large fleet without blocking.
+The hub polls each registered node every `SYSHUB_POLL_INTERVAL` seconds (default 5). It uses a `ThreadPoolExecutor` with up to 8 concurrent workers, so polling scales across a large fleet without blocking.
 
 Cached data is served to the browser instantly from `/api/fleet`. If a node goes offline, its last-known status is shown with an **offline** indicator until it recovers.
 
@@ -82,7 +82,7 @@ Cached data is served to the browser instantly from `/api/fleet`. If a node goes
 
 ## Per-Node Authentication
 
-If individual node agents have `PIMONITOR_TOKEN` set, register them with a token:
+If individual node agents have `SYSMONITOR_TOKEN` set, register them with a token:
 
 ```bash
 curl -X PUT http://hub:8686/api/nodes/192-168-1-42-8585 \
@@ -111,7 +111,7 @@ All actions (service control, process kill, power) are proxied through the hub t
 
 ## Node Registry Persistence
 
-Registered nodes are stored in `hub_nodes.json` (default `./hub_nodes.json`, override with `PIHUB_NODES_FILE`). The file is written on every add/remove/update. To reset the registry, delete the file and restart the hub.
+Registered nodes are stored in `hub_nodes.json` (default `./hub_nodes.json`, override with `SYSHUB_NODES_FILE`). The file is written on every add/remove/update. To reset the registry, delete the file and restart the hub.
 
 ---
 

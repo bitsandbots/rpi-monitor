@@ -1,6 +1,6 @@
 # API Reference
 
-All responses are JSON. If `PIMONITOR_TOKEN` / `PIHUB_TOKEN` is set, every request must include:
+All responses are JSON. If `SYSMONITOR_TOKEN` / `SYSHUB_TOKEN` is set, every request must include:
 
 ```
 Authorization: Bearer <token>
@@ -24,25 +24,18 @@ Hardware identity detected once at startup and cached.
 
 ```json
 {
-  "is_raspberry_pi": true,
-  "model": "Raspberry Pi 5 Model B Rev 1.0",
-  "revision": "d04170",
+  "hostname": "ubuntu-server",
+  "kernel": "6.8.0-100-generic",
+  "architecture": "x86_64",
+  "os": "Ubuntu 24.04",
+  "cpu_model": "12th Gen Intel Core i7-1260P",
+  "cpu_vendor": "GenuineIntel",
+  "cpu_max_freq": "4700 MHz",
   "serial": "abcdef12",
-  "hardware": "BCM2835",
-  "soc": "BCM2712",
-  "gpu_mb": 76,
-  "hostname": "pi5",
-  "kernel": "6.6.31+rpt-rpi-2712",
-  "architecture": "aarch64",
-  "os": "Debian GNU/Linux 12 (bookworm)",
-  "cpu_model": "Cortex-A76",
-  "cpu_max_freq": "2400 MHz",
-  "python": "3.11.2",
+  "python": "3.12.3",
   "boot_time": "2026-04-10T07:00:00"
 }
 ```
-
-> `gpu_mb` is `null` on non-Pi hardware.
 
 ---
 
@@ -67,7 +60,6 @@ Live CPU, memory, temperature, uptime, and network rates. Polled by the dashboar
     "buffers_mb": 128.0,
     "swap_total_mb": 100.0,
     "swap_used_mb": 0.0,
-    "gpu_mb": 76,
     "percent": 25.0
   },
   "temperature": 52.3,
@@ -145,7 +137,7 @@ Query params: `?limit=N` (default 12, max 50)
     "pid": 1234,
     "cpu": 12.5,
     "mem": 1.3,
-    "command": "python3 /opt/rpi-monitor/rpi_monitor.py"
+    "command": "python3 /opt/sys-monitor/sys_monitor.py"
   }
 ]
 ```
@@ -156,7 +148,7 @@ Send a signal to a process.
 Query param: `?signal=N` (default 15 / SIGTERM, use 9 for SIGKILL)
 
 ```bash
-curl -X DELETE "http://pi:8585/api/processes/1234?signal=9"
+curl -X DELETE "http://ubuntu-server:8585/api/processes/1234?signal=9"
 ```
 
 ```json
@@ -185,7 +177,7 @@ Status of all monitored services.
 Control a service. Actions: `start`, `stop`, `restart`, `enable`, `disable`.
 
 ```bash
-curl -X POST http://pi:8585/api/services/nginx/restart
+curl -X POST http://ubuntu-server:8585/api/services/nginx/restart
 ```
 
 ```json
@@ -207,7 +199,7 @@ curl -X POST http://pi:8585/api/services/nginx/restart
 Actions: `reboot`, `shutdown`.
 
 ```bash
-curl -X POST http://pi:8585/api/power/reboot
+curl -X POST http://ubuntu-server:8585/api/power/reboot
 ```
 
 ```json
@@ -223,7 +215,7 @@ Query params: `?limit=50` (default 100)
 
 ```json
 [
-  {"ts": "14:22:01", "msg": "PiMonitor ready.", "level": "success"},
+  {"ts": "14:22:01", "msg": "SysMonitor ready.", "level": "success"},
   {"ts": "14:23:10", "msg": "Service restarted: nginx", "level": "info"}
 ]
 ```
@@ -306,7 +298,7 @@ Cached snapshot of all registered nodes.
       "id": "192-168-1-42-8585",
       "host": "192.168.1.42",
       "port": 8585,
-      "label": "Pi-Living-Room",
+      "label": "Node-Living-Room",
       "online": true,
       "last_seen": 1713100000.0,
       "cpu_usage": 12.4,
@@ -331,7 +323,7 @@ Cached snapshot of all registered nodes.
 | `PUT` | `/api/nodes/<nid>` | Update label or token |
 
 ### `POST /api/discover`
-Scan the local /24 subnet for RPiMonitor agents.
+Scan the local /24 subnet for SysMonitor agents.
 
 ```json
 {"subnet": "192.168.1.0/24", "port": 8585}
@@ -343,8 +335,8 @@ Scan the local /24 subnet for RPiMonitor agents.
     {
       "host": "192.168.1.42",
       "port": 8585,
-      "hostname": "pi5",
-      "model": "Raspberry Pi 5 Model B Rev 1.0",
+      "hostname": "ubuntu-server",
+      "model": "Intel NUC 12 Pro",
       "id": "192-168-1-42-8585",
       "already_registered": false
     }

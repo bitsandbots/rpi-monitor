@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-RPiMonitor — Raspberry Pi System Monitor & Service Control Console
-A lightweight Flask-based dashboard for monitoring and managing Raspberry Pi
-and Linux devices. Reads live data from /proc, /sys, and systemctl.
+SysMonitor — Linux System Monitor & Service Control Console
+A lightweight Flask-based dashboard for monitoring and managing Ubuntu
+and Debian-based Linux devices. Reads live data from /proc, /sys, and systemctl.
 
-CoreConduit Consulting Services — https://coreconduit.io
+CoreConduit Consulting Services — https://coreconduit.com
 License: MIT
 """
 
@@ -29,19 +29,19 @@ VERSION = "2.2.0"
 # Configuration
 # ═══════════════════════════════════════════════════════════════════════════
 CONFIG = {
-    "host": os.getenv("PIMONITOR_HOST", "0.0.0.0"),
-    "port": int(os.getenv("PIMONITOR_PORT", "8585")),
-    "debug": os.getenv("PIMONITOR_DEBUG", "false").lower() == "true",
-    "auth_token": os.getenv("PIMONITOR_TOKEN", ""),
+    "host": os.getenv("SYSMONITOR_HOST", "0.0.0.0"),
+    "port": int(os.getenv("SYSMONITOR_PORT", "8585")),
+    "debug": os.getenv("SYSMONITOR_DEBUG", "false").lower() == "true",
+    "auth_token": os.getenv("SYSMONITOR_TOKEN", ""),
     "services": [
         s.strip()
         for s in os.getenv(
-            "PIMONITOR_SERVICES",
-            "ssh,nginx,docker,ollama,mosquitto,chromadb,nodered,grafana-server,cron,avahi-daemon",
+            "SYSMONITOR_SERVICES",
+            "ssh,nginx,docker,ollama,mosquitto,cron,avahi-daemon",
         ).split(",")
         if s.strip()
     ],
-    "refresh_interval": int(os.getenv("PIMONITOR_REFRESH", "2")),
+    "refresh_interval": int(os.getenv("SYSMONITOR_REFRESH", "2")),
 }
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -49,7 +49,7 @@ CONFIG = {
 # ═══════════════════════════════════════════════════════════════════════════
 _SERVICES_FILE = Path(
     os.getenv(
-        "PIMONITOR_SERVICES_FILE",
+        "SYSMONITOR_SERVICES_FILE",
         str(Path(__file__).parent / "services.json"),
     )
 )
@@ -79,49 +79,22 @@ def _save_services():
 _load_services()
 
 # ═══════════════════════════════════════════════════════════════════════════
-# Boot-time Pi Detection (runs once at startup)
+# Boot-time System Detection (runs once at startup)
 # ═══════════════════════════════════════════════════════════════════════════
 _BOOT_INFO = {}
 
 
-def detect_pi():
+def detect_system():
     """Detect hardware at startup and cache the result."""
     global _BOOT_INFO
-    model = _read_file("/proc/device-tree/model", "").rstrip("\x00")
-    revision = ""
     serial = ""
     hardware = ""
 
     for line in _read_file("/proc/cpuinfo").splitlines():
-        if line.startswith("Revision"):
-            revision = line.split(":")[-1].strip()
-        elif line.startswith("Serial"):
+        if line.startswith("Serial"):
             serial = line.split(":")[-1].strip()
         elif line.startswith("Hardware"):
             hardware = line.split(":")[-1].strip()
-        elif line.startswith("Model"):
-            model = model or line.split(":")[-1].strip()
-
-    is_pi = bool(model and ("raspberry" in model.lower() or "bcm" in hardware.lower()))
-
-    # SoC detection from revision code
-    soc_map = {
-        "0": "BCM2835",
-        "1": "BCM2836",
-        "2": "BCM2837",
-        "3": "BCM2711",
-        "4": "BCM2712",
-    }
-    soc = ""
-    if len(revision) >= 6:
-        try:
-            proc_id = str((int(revision, 16) >> 12) & 0xF)
-            soc = soc_map.get(proc_id, f"BCM_unknown({proc_id})")
-        except ValueError:
-            pass
-
-    # GPU memory (Pi-specific)
-    gpu_mem = _run("vcgencmd get_mem gpu 2>/dev/null | grep -oP '\\d+'")
 
     # System identity
     kernel = _run("uname -r")
@@ -136,10 +109,14 @@ def detect_pi():
 
     # CPU info
     cpu_model = ""
+    cpu_vendor = ""
     for line in _read_file("/proc/cpuinfo").splitlines():
         if "model name" in line.lower():
             cpu_model = line.split(":")[-1].strip()
-            break
+        if "vendor_id" in line.lower():
+            cpu_vendor = line.split(":")[-1].strip()
+    if not cpu_model:
+        cpu_model = hardware or "Unknown CPU"
     cpu_max_freq = _read_file(
         "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", ""
     )
@@ -149,19 +126,14 @@ def detect_pi():
     python_ver = _run("python3 --version 2>&1 | awk '{print $2}'")
 
     _BOOT_INFO = {
-        "is_raspberry_pi": is_pi,
-        "model": model or "Generic Linux",
-        "revision": revision,
-        "serial": serial[-8:] if serial else "",
-        "hardware": hardware,
-        "soc": soc,
-        "gpu_mb": int(gpu_mem) if gpu_mem else None,
         "hostname": hostname,
         "kernel": kernel,
         "architecture": arch,
         "os": os_name or "Unknown",
         "cpu_model": cpu_model,
+        "cpu_vendor": cpu_vendor,
         "cpu_max_freq": cpu_max_freq,
+        "serial": serial[-8:] if serial else "",
         "python": python_ver,
         "boot_time": datetime.now().isoformat(timespec="seconds"),
     }
@@ -298,36 +270,15 @@ def get_temperature_status() -> dict:
         level: 'normal' | 'warning' | 'critical' | 'throttling'
         message: str | None - Human-readable alert message
         color: str - CSS color class for UI
-        throttled_status: dict | None - vcgencmd get_throttled output if Pi
     """
     temp = get_cpu_temperature()
 
-    # Try to get throttled status on Pi (vcgencmd)
-    throttled_raw = _run("vcgencmd get_throttled 2>/dev/null")
-    throttled_status = None
-
-    if throttled_raw and "throttled=0x" in throttled_raw:
-        try:
-            value = int(throttled_raw.split("=")[1].strip(), 16)
-            throttled_status = {
-                "undervoltage_occurred": bool(value & (1 << 0)),
-                "frequency_capped_occurred": bool(value & (1 << 1)),
-                "throttled_occurred": bool(value & (1 << 2)),
-                "undervoltage_now": bool(value & (1 << 16)),
-                "frequency_capped_now": bool(value & (1 << 17)),
-                "throttled_now": bool(value & (1 << 18)),
-            }
-        except (ValueError, IndexError):
-            pass
-
-    # Determine alert level
     if temp >= TEMP_THROTTLE:
         return {
             "temp_c": temp,
             "level": "throttling",
-            "message": f"CPU at {temp}°C — throttling active (VCPU frequency capped)",
+            "message": f"CPU at {temp}°C — system may become unstable",
             "color": "var(--red)",
-            "throttled_status": throttled_status,
         }
     elif temp >= TEMP_CRITICAL:
         return {
@@ -335,7 +286,6 @@ def get_temperature_status() -> dict:
             "level": "critical",
             "message": f"CPU at {temp}°C — immediate action needed",
             "color": "var(--orange)",
-            "throttled_status": throttled_status,
         }
     elif temp >= TEMP_WARNING:
         return {
@@ -343,7 +293,6 @@ def get_temperature_status() -> dict:
             "level": "warning",
             "message": f"CPU at {temp}°C — consider improving cooling",
             "color": "var(--yellow)",
-            "throttled_status": throttled_status,
         }
     else:
         return {
@@ -351,75 +300,77 @@ def get_temperature_status() -> dict:
             "level": "normal",
             "message": None,
             "color": "var(--green)",
-            "throttled_status": throttled_status,
         }
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# Power Status (Low Voltage Warning)
+# Power Status
 # ═══════════════════════════════════════════════════════════════════════════
 def get_power_status() -> dict:
     """
-    Read Pi voltage/frequency throttle status.
+    Power status placeholder. No universal Linux power monitoring
+    equivalent — returns unavailable on desktop/server systems.
 
     Returns:
-        undervoltage_occurred: bool - Has undervoltage happened?
-        undervoltage_now: bool - Currently experiencing undervoltage?
-        frequency_capped_occurred: bool - Has frequency been capped?
-        frequency_capped_now: bool - Currently capped?
-        throttled_now: bool - Currently throttled?
-        available: bool - Is power monitoring available?
+        available: bool - Always false (no generic Linux power monitoring)
     """
-    # Method 1: vcgencmd get_throttled (Pi-specific)
-    throttled = _run("vcgencmd get_throttled 2>/dev/null")
-
-    if throttled and "throttled=0x" in throttled:
-        try:
-            value = int(throttled.split("=")[1].strip(), 16)
-            return {
-                "available": True,
-                "undervoltage_occurred": bool(value & (1 << 0)),
-                "frequency_capped_occurred": bool(value & (1 << 1)),
-                "throttled_occurred": bool(value & (1 << 2)),
-                "undervoltage_now": bool(value & (1 << 16)),
-                "frequency_capped_now": bool(value & (1 << 17)),
-                "throttled_now": bool(value & (1 << 18)),
-                "throttled_raw": throttled.strip(),
-            }
-        except (ValueError, IndexError):
-            pass
-
-    return {
-        "available": False,
-        "undervoltage_occurred": False,
-        "frequency_capped_occurred": False,
-        "throttled_now": False,
-    }
+    return {"available": False}
 
 
 # ═══════════════════════════════════════════════════════════════════════════
 # System Stability & Critical Services
 # ═══════════════════════════════════════════════════════════════════════════
+def _parse_systemctl_failed(output: str, scope: str) -> list:
+    """Parse `systemctl --failed --plain --no-legend` output into failed-unit dicts."""
+    failed = []
+    for line in output.splitlines():
+        parts = line.split(None, 4)
+        if not parts:
+            continue
+        failed.append(
+            {
+                "name": parts[0],
+                "state": "failed",
+                "critical": False,
+                "scope": scope,
+            }
+        )
+    return failed
+
+
 def get_critical_services_status() -> list:
     """
-    Check if critical system services are running.
+    Check if critical system services are running, plus any other failed unit.
 
-    Monitors: systemd-journald, dbus, cron, systemd-networkd (or networking)
-    Returns list of failed critical services.
+    Monitors by name: systemd-journald, dbus, cron, systemd-networkd (or networking).
+    Also scans `systemctl --failed` (system scope) and `systemctl --user --failed`
+    (coreconduit's user scope) so any unit that has actually failed shows up here,
+    not just the fixed short list above — this is what would have surfaced the
+    espocrm-daemon and nextcloud-taskprocessing-worker restart-loop incidents on
+    the dashboard automatically instead of only in `journalctl`.
     """
     critical = ["systemd-journald", "dbus", "cron"]
-    # Add networking service (varies by distro)
-    critical.append(
-        "systemd-networkd"
-        if _read_file("/etc/os-release", "").find("systemd-networkd") >= 0
-        else "networking"
-    )
+    # Add the networking service that actually exists on this system
+    if _run("systemctl is-active systemd-networkd 2>/dev/null") in ("active", "inactive"):
+        critical.append("systemd-networkd")
+    elif _run("systemctl is-active networking 2>/dev/null") in ("active", "inactive"):
+        critical.append("networking")
 
     failed = []
     for svc in critical:
         active = _run(f"systemctl is-active {svc} 2>/dev/null")
         if active != "active":
             failed.append({"name": svc, "state": active or "unknown", "critical": True})
+
+    system_failed = _run("systemctl --failed --plain --no-legend 2>/dev/null")
+    failed.extend(_parse_systemctl_failed(system_failed, "system"))
+
+    user_failed = _run(
+        "sudo -u coreconduit env XDG_RUNTIME_DIR=/run/user/1000 "
+        "systemctl --user --failed --plain --no-legend 2>/dev/null"
+    )
+    failed.extend(_parse_systemctl_failed(user_failed, "user"))
+
     return failed
 
 
@@ -471,42 +422,6 @@ def get_system_stability() -> dict:
         )
 
     return {"stable": len(issues) == 0, "issues": issues}
-    """
-    Read Pi voltage/frequency throttle status.
-
-    Returns:
-        undervoltage_occurred: bool - Has undervoltage happened?
-        undervoltage_now: bool - Currently experiencing undervoltage?
-        frequency_capped_occurred: bool - Has frequency been capped?
-        frequency_capped_now: bool - Currently capped?
-        throttled_now: bool - Currently throttled?
-        available: bool - Is power monitoring available?
-    """
-    # Method 1: vcgencmd get_throttled (Pi-specific)
-    throttled = _run("vcgencmd get_throttled 2>/dev/null")
-
-    if throttled and "throttled=0x" in throttled:
-        try:
-            value = int(throttled.split("=")[1].strip(), 16)
-            return {
-                "available": True,
-                "undervoltage_occurred": bool(value & (1 << 0)),
-                "frequency_capped_occurred": bool(value & (1 << 1)),
-                "throttled_occurred": bool(value & (1 << 2)),
-                "undervoltage_now": bool(value & (1 << 16)),
-                "frequency_capped_now": bool(value & (1 << 17)),
-                "throttled_now": bool(value & (1 << 18)),
-                "throttled_raw": throttled.strip(),
-            }
-        except (ValueError, IndexError):
-            pass
-
-    return {
-        "available": False,
-        "undervoltage_occurred": False,
-        "frequency_capped_occurred": False,
-        "throttled_now": False,
-    }
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -539,7 +454,6 @@ def get_memory() -> dict:
         "buffers_mb": round(buffers / 1024, 1),
         "swap_total_mb": round(swap_total / 1024, 1),
         "swap_used_mb": round((swap_total - swap_free) / 1024, 1),
-        "gpu_mb": _BOOT_INFO.get("gpu_mb"),
         "percent": round(max(used, 0) / total * 100, 1) if total > 0 else 0.0,
     }
 
@@ -817,19 +731,11 @@ _SERVICE_PORTS = {
     "grafana": 3000,
     "prometheus": 9090,
     "node_exporter": 9100,
-    "ollama": 11434,
+    "llama-server": 11434,
     "chromadb": 8000,
-    # Pi-specific
-    "rpi-monitor": 8585,
-    "pimonitor": 8585,
-    "rpi-fleet": 5088,
-    "coreai": 5050,
-    "nexus": 8000,
-    "docsync-web": 8484,
-    "wiki-notebook": 5001,
-    "rag-chatbot": 7860,
-    "flow-analyzer": 8090,
-    "clippy": 5080,
+    # SysMonitor
+    "sys-monitor": 8585,
+    "sysmonitor": 8585,
 }
 
 
@@ -1290,31 +1196,29 @@ def api_system_errors():
 # Entry Point
 # ═══════════════════════════════════════════════════════════════════════════
 if __name__ == "__main__":
-    info = detect_pi()
+    info = detect_system()
 
     # Seed the CPU differential sampler
     _parse_proc_stat()
     time.sleep(0.1)
 
-    log_event("RPiMonitor starting...")
-    log_event(f"Detected: {info['model']}")
-    if info["soc"]:
-        log_event(f"SoC: {info['soc']} | Arch: {info['architecture']}")
+    log_event("SysMonitor starting...")
     log_event(f"Hostname: {info['hostname']} | Kernel: {info['kernel']}")
+    log_event(f"CPU: {info['cpu_model']} | Arch: {info['architecture']}")
+    log_event(f"OS: {info['os']}")
     log_event(f"Services configured: {len(CONFIG['services'])}")
     log_event(f"Listening on http://{CONFIG['host']}:{CONFIG['port']}")
-    log_event("RPiMonitor ready.", "success")
-
-    marker = "PI" if info["is_raspberry_pi"] else "LINUX"
+    log_event("SysMonitor ready.", "success")
 
     print(f"""
 \033[36m╔══════════════════════════════════════════════════╗
-║   RPi\033[33mMonitor\033[36m · v2.2.0                              ║
+║   Sys\033[33mMonitor\033[36m · v2.2.0                              ║
 ║   CoreConduit Consulting Services                 ║
 ╠══════════════════════════════════════════════════╣\033[0m
-  Device:   {info['model']} [{marker}]
-  SoC:      {info.get('soc') or '—'}
+  Hostname: {info['hostname']}
+  CPU:      {info['cpu_model']}
   Kernel:   {info['kernel']}
+  OS:       {info['os']}
   Auth:     {'ENABLED' if CONFIG['auth_token'] else 'DISABLED'}
   Services: {len(CONFIG['services'])} configured
   Listen:   http://{CONFIG['host']}:{CONFIG['port']}

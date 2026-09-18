@@ -1,6 +1,6 @@
-# RPi**Monitor** v2.2.0
+# Sys**|Monitor** v2.2.0
 
-A lightweight, self-hosted Raspberry Pi system monitor and service control console written in Python. Single-file Flask backend, zero JavaScript dependencies, no build step.
+A lightweight, self-hosted Linux system monitor and service control console written in Python. Single-file Flask backend, zero JavaScript dependencies, no build step.
 
 Built for [CoreConduit Consulting Services](https://coreconduit.com) infrastructure.
 
@@ -9,7 +9,7 @@ Built for [CoreConduit Consulting Services](https://coreconduit.com) infrastruct
 ### Monitoring
 - **CPU** — differential usage sampling (accurate real-time %), per-core stats, load averages, current frequency
 - **Temperature** — live reading with 60-second sparkline history
-- **Memory** — RAM, cached, buffers, swap, GPU memory (Pi-specific via `vcgencmd`)
+- **Memory** — RAM, cached, buffers, swap
 - **Storage** — all mounted filesystems with capacity bars
 - **Network** — interface enumeration, throughput rates (bytes/sec delta tracking), RX/TX sparklines
 - **Processes** — top processes by CPU with kill capability
@@ -29,7 +29,7 @@ Built for [CoreConduit Consulting Services](https://coreconduit.com) infrastruct
 
 ### Hardware Health (v2.2.0)
 - **Temperature Alerts** — Automatic warnings at 70°C (warning), 80°C (critical), 85°C (throttling)
-- **Low Voltage Warning** — Detects under-voltage events and current voltage issues via `vcgencmd get_throttled`
+- **Power Status** — Basic power monitoring placeholder
 - **Service Failure Detection** — Monitors critical services and reports failures
 - **System Stability Checks** — Detects OOM events, kernel errors, and service restart loops
 
@@ -46,14 +46,14 @@ Built for [CoreConduit Consulting Services](https://coreconduit.com) infrastruct
 ### One-command install (recommended)
 
 ```bash
-git clone https://github.com/coreconduit/rpi-monitor
-cd rpi-monitor
+git clone https://github.com/coreconduit/sys-monitor
+cd sys-monitor
 sudo ./install.sh           # node agent only
 sudo ./install.sh --hub     # node agent + hub
 sudo ./install.sh --hub-only  # hub only
 ```
 
-Access at `http://<pi-ip>:8585` (node) or `http://<pi-ip>:8686` (hub).
+Access at `http://<host-ip>:8585` (node) or `http://<host-ip>:8686` (hub).
 
 ### Manual install
 
@@ -62,21 +62,21 @@ Access at `http://<pi-ip>:8585` (node) or `http://<pi-ip>:8686` (hub).
 pip install flask --break-system-packages
 
 # Run directly
-python3 rpi_monitor.py
+python3 sys_monitor.py
 ```
 
 ### Install as Service (manual)
 
 ```bash
-sudo cp rpi-monitor.service /etc/systemd/system/
+sudo cp sys-monitor.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now rpi-monitor
+sudo systemctl enable --now sys-monitor
 ```
 
 Check status:
 ```bash
-sudo systemctl status rpi-monitor
-journalctl -u rpi-monitor -f
+sudo systemctl status sys-monitor
+journalctl -u sys-monitor -f
 ```
 
 ### Uninstall
@@ -90,7 +90,7 @@ sudo ./install.sh --uninstall
 **New Features:**
 - **Hardware Health Alerts** — Real-time monitoring with automatic alert cards on Overview tab
   - Temperature alerts at 70°C (warning), 80°C (critical), 85°C (throttling)
-  - Low voltage warning via `vcgencmd get_throttled` (undervoltage, frequency capping)
+  - Power status monitoring
   - Critical service failure detection (systemd-journald, dbus, cron)
   - System stability checks (OOM, kernel errors, restart loops)
 
@@ -101,7 +101,7 @@ sudo ./install.sh --uninstall
 **Improvements:**
 - Alert cards auto-clear when conditions normalize
 - Temperature thresholds configurable in source (TEMP_WARNING=70, TEMP_CRITICAL=80, TEMP_THROTTLE=85)
-- Power status parses vcgencmd bit fields for current and historical events
+- Power status provides basic availability detection
 
 **Documentation:**
 - New `docs/alerts.md` — Complete hardware alerts guide
@@ -124,31 +124,31 @@ All configuration is via environment variables — no config files to manage.
 
 | Variable | Default | Description |
 |---|---|---|
-| `PIMONITOR_HOST` | `0.0.0.0` | Bind address |
-| `PIMONITOR_PORT` | `8585` | Port |
-| `PIMONITOR_DEBUG` | `false` | Flask debug mode |
-| `PIMONITOR_TOKEN` | *(empty)* | Optional Bearer token for API auth |
-| `PIMONITOR_SERVICES` | `ssh,nginx,docker,...` | Comma-separated service whitelist |
-| `PIMONITOR_REFRESH` | `2` | Frontend polling interval (seconds) |
+| `SYSMONITOR_HOST` | `0.0.0.0` | Bind address |
+| `SYSMONITOR_PORT` | `8585` | Port |
+| `SYSMONITOR_DEBUG` | `false` | Flask debug mode |
+| `SYSMONITOR_TOKEN` | *(empty)* | Optional Bearer token for API auth |
+| `SYSMONITOR_SERVICES` | `ssh,nginx,docker,...` | Comma-separated service whitelist |
+| `SYSMONITOR_REFRESH` | `2` | Frontend polling interval (seconds) |
 
 ### Configuring Services
 
 Option 1 — environment variable:
 ```bash
-export PIMONITOR_SERVICES="ssh,nginx,docker,ollama,mosquitto"
+export SYSMONITOR_SERVICES="ssh,nginx,docker,ollama,mosquitto"
 ```
 
-Option 2 — edit `CONFIG["services"]` in `rpi_monitor.py` directly.
+Option 2 — edit `CONFIG["services"]` in `sys_monitor.py` directly.
 
 ### Authentication
 
-Set `PIMONITOR_TOKEN` to require Bearer token auth on all API endpoints:
+Set `SYSMONITOR_TOKEN` to require Bearer token auth on all API endpoints:
 
 ```bash
-export PIMONITOR_TOKEN=my-secret-token
+export SYSMONITOR_TOKEN=my-secret-token
 ```
 
-The web UI currently does not send auth headers — token auth is designed for API-only access. For UI auth, place RPiMonitor behind a reverse proxy with basic auth.
+The web UI currently does not send auth headers — token auth is designed for API-only access. For UI auth, place SysMonitor behind a reverse proxy with basic auth.
 
 ## API Endpoints
 
@@ -174,15 +174,15 @@ The web UI currently does not send auth headers — token auth is designed for A
 If running as a non-root user, add scoped sudoers rules:
 
 ```bash
-# /etc/sudoers.d/rpi-monitor
+# /etc/sudoers.d/sys-monitor
 # Restrict to specific services rather than wildcards
-pimonitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl start ssh nginx docker ollama mosquitto
-pimonitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop ssh nginx docker ollama mosquitto
-pimonitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart ssh nginx docker ollama mosquitto
-pimonitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl enable ssh nginx docker ollama mosquitto
-pimonitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl disable ssh nginx docker ollama mosquitto
-pimonitor ALL=(ALL) NOPASSWD: /sbin/reboot
-pimonitor ALL=(ALL) NOPASSWD: /sbin/shutdown
+sysmonitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl start ssh nginx docker ollama mosquitto
+sysmonitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop ssh nginx docker ollama mosquitto
+sysmonitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart ssh nginx docker ollama mosquitto
+sysmonitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl enable ssh nginx docker ollama mosquitto
+sysmonitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl disable ssh nginx docker ollama mosquitto
+sysmonitor ALL=(ALL) NOPASSWD: /sbin/reboot
+sysmonitor ALL=(ALL) NOPASSWD: /sbin/shutdown
 ```
 
 **Important:** List each service explicitly rather than using wildcards to prevent privilege escalation.
@@ -190,11 +190,11 @@ pimonitor ALL=(ALL) NOPASSWD: /sbin/shutdown
 ## Architecture
 
 ```
-rpi-monitor/
-├── rpi_monitor.py          # Flask backend — all data collection + API + boot detection
+sys-monitor/
+├── sys_monitor.py          # Flask backend — all data collection + API + boot detection
 ├── templates/
 │   └── index.html         # Self-contained frontend (HTML + CSS + JS, no build step)
-├── rpi-monitor.service     # Systemd unit file
+├── sys-monitor.service     # Systemd unit file
 ├── requirements.txt       # Flask only
 └── README.md
 ```
@@ -206,13 +206,13 @@ rpi-monitor/
 - **Service whitelist** — `control_service()` rejects any service name not in `CONFIG["services"]` before invoking systemctl
 - **In-memory event log** — ring buffer (200 entries) captures service actions, kills, power events; no disk I/O
 - **Single dependency** — Flask only; reads system data from `/proc` and `/sys` directly, no psutil required
-- **Boot detection** — hardware identification runs once at startup and caches the result; Pi model, SoC, and revision are parsed from `/proc/cpuinfo` and `/proc/device-tree/model`
+- **Boot detection** — hardware identification runs once at startup and caches the result; CPU model, vendor, and architecture are detected from `/proc/cpuinfo` and `/sys`
 
 ## Requirements
 
 - Python 3.11+
 - Flask 3.0+
-- Raspberry Pi OS / Debian / Ubuntu (any Linux with `/proc` and `systemd`)
+- Ubuntu 24.04+ / Debian (any Linux with `/proc` and `systemd`)
 - `sudo` access for service control and power management
 
 ## License

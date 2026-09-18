@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# release.sh — RPiMonitor release packager
+# release.sh — SysMonitor release packager
 # Run from the repo root on your dev machine (not on the Pi).
 #
 # Usage:
-#   ./release.sh                  # Package current VERSION from rpi_monitor.py
+#   ./release.sh                  # Package current VERSION from sys_monitor.py
 #   ./release.sh 2.1.0            # Bump to 2.1.0, tag, and package
-#   ./release.sh 2.1.0 --dry-run  # Show what would happen, no changes
+#   ./release.sh 2.1.0 --clean    # Clean dist/ before building
 #
 # Produces:
-#   dist/rpi-monitor-<version>.tar.gz  — release tarball
-#   dist/rpi-monitor-<version>.sha256  — checksum file
+#   dist/sys-monitor-<version>.tar.gz  — release tarball
+#   dist/sys-monitor-<version>.sha256  — checksum file
 #
 # CoreConduit Consulting Services — MIT License
 
@@ -28,11 +28,13 @@ warn()  { echo -e "${YLW}[WARN]${NC}  $*"; }
 die()   { echo -e "${RED}[FAIL]${NC}  $*" >&2; exit 1; }
 
 DRY=false
+CLEAN=false
 NEW_VERSION=""
 
 for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY=true ;;
+    --clean)   CLEAN=true ;;
     --help|-h)
       sed -n '2,10p' "$0" | sed 's/^# //'
       exit 0
@@ -43,13 +45,13 @@ for arg in "$@"; do
 done
 
 # ── Read current version ──────────────────────────────────────────────────────
-CURRENT_VERSION=$(grep '^VERSION = ' rpi_monitor.py | sed 's/VERSION = "\(.*\)"/\1/')
-[[ -n "$CURRENT_VERSION" ]] || die "Could not read VERSION from rpi_monitor.py"
+CURRENT_VERSION=$(grep '^VERSION = ' sys_monitor.py | sed 's/VERSION = "\(.*\)"/\1/')
+[[ -n "$CURRENT_VERSION" ]] || die "Could not read VERSION from sys_monitor.py"
 
 TARGET_VERSION="${NEW_VERSION:-$CURRENT_VERSION}"
 
 echo ""
-echo "  RPi|Monitor  Release"
+echo "  Sys|Monitor  Release"
 echo "  CoreConduit Consulting Services"
 echo ""
 info "Current version : $CURRENT_VERSION"
@@ -58,7 +60,7 @@ $DRY && warn "DRY RUN — no files will be changed"
 echo ""
 
 # ── Preflight ────────────────────────────────────────────────────────────────
-[[ -f rpi_monitor.py ]]           || die "Run from repo root"
+[[ -f sys_monitor.py ]]           || die "Run from repo root"
 command -v git    >/dev/null 2>&1 || die "git not found"
 command -v tar    >/dev/null 2>&1 || die "tar not found"
 command -v sha256sum >/dev/null 2>&1 || die "sha256sum not found"
@@ -73,16 +75,16 @@ fi
 # ── Bump version if requested ─────────────────────────────────────────────────
 bump_version() {
   local v="$1"
-  info "Bumping VERSION to $v in rpi_monitor.py and hub/rpi_monitor_hub.py"
+  info "Bumping VERSION to $v in sys_monitor.py and hub/sys_monitor_hub.py"
 
   if ! $DRY; then
-    sed -i "s/^VERSION = \".*\"/VERSION = \"$v\"/" rpi_monitor.py
-    sed -i "s/^VERSION = \".*\"/VERSION = \"$v\"/" hub/rpi_monitor_hub.py
-    # Also update banner line in rpi_monitor.py if present
-    sed -i "s/v[0-9]\+\.[0-9]\+\.[0-9]\+ /v${v} /g" rpi_monitor.py
+    sed -i "s/^VERSION = \".*\"/VERSION = \"$v\"/" sys_monitor.py
+    sed -i "s/^VERSION = \".*\"/VERSION = \"$v\"/" hub/sys_monitor_hub.py
+    # Also update banner line in sys_monitor.py if present
+    sed -i "s/v[0-9]\+\.[0-9]\+\.[0-9]\+ /v${v} /g" sys_monitor.py
     ok "Version bumped to $v"
   else
-    ok "[dry] Would bump VERSION → $v in rpi_monitor.py, hub/rpi_monitor_hub.py"
+    ok "[dry] Would bump VERSION → $v in sys_monitor.py, hub/sys_monitor_hub.py"
   fi
 }
 
@@ -95,32 +97,39 @@ fi
 
 # ── Build release tarball ─────────────────────────────────────────────────────
 DIST_DIR="dist"
-ARCHIVE_NAME="rpi-monitor-${TARGET_VERSION}"
+ARCHIVE_NAME="sys-monitor-${TARGET_VERSION}"
 ARCHIVE_PATH="${DIST_DIR}/${ARCHIVE_NAME}.tar.gz"
 CHECKSUM_PATH="${DIST_DIR}/${ARCHIVE_NAME}.sha256"
 
 # Files to include in release (relative to repo root)
 RELEASE_FILES=(
-  rpi_monitor.py
+  sys_monitor.py
   requirements.txt
+  services.json
   templates/index.html
   static
-  rpi-monitor.service
+  sys-monitor.service
   install.sh
   update.sh
   release.sh
   .env.example
   README.md
   docs
-  hub/rpi_monitor_hub.py
+  hub/sys_monitor_hub.py
   hub/requirements.txt
   hub/templates/hub.html
-  hub/rpi-monitor-hub.service
+  hub/sys-monitor-hub.service
   hub/HUB_README.md
 )
 
 if ! $DRY; then
   mkdir -p "$DIST_DIR"
+
+  if $CLEAN; then
+    info "Cleaning dist/ directory..."
+    rm -f "${DIST_DIR}"/*.tar.gz "${DIST_DIR}"/*.sha256
+    ok "dist/ cleaned"
+  fi
 
   # Build tarball with directory prefix inside archive
   tar -czf "$ARCHIVE_PATH" \
@@ -153,11 +162,11 @@ tag_and_commit() {
 
   if [[ -n "$NEW_VERSION" && "$NEW_VERSION" != "$CURRENT_VERSION" ]]; then
     info "Committing version bump..."
-    git add rpi_monitor.py hub/rpi_monitor_hub.py
+    git add sys_monitor.py hub/sys_monitor_hub.py
     git commit -m "chore: bump version to ${TARGET_VERSION}"
   fi
 
-  git tag -a "$TAG" -m "RPiMonitor v${TARGET_VERSION}"
+  git tag -a "$TAG" -m "SysMonitor v${TARGET_VERSION}"
   ok "Tagged $TAG"
   info "Push with: git push origin main && git push origin $TAG"
 }
@@ -178,7 +187,7 @@ if ! $DRY; then
   echo "    2. Upload dist/${ARCHIVE_NAME}.tar.gz to GitHub release"
   echo "    3. Attach dist/${ARCHIVE_NAME}.sha256 as checksum"
   echo ""
-  echo "  On target Pi:"
+  echo "  On target system:"
   echo "    curl -O <release-url>/${ARCHIVE_NAME}.tar.gz"
   echo "    tar -xzf ${ARCHIVE_NAME}.tar.gz"
   echo "    cd ${ARCHIVE_NAME} && sudo ./install.sh"

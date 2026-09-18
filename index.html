@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>RPiMonitor — {{ boot.hostname or 'loading' }}</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230c1a2e'/><text x='16' y='22' text-anchor='middle' font-size='18' fill='%232b7de9' font-family='sans-serif' font-weight='bold'>π</text></svg>">
+<title>SysMonitor — {{ boot.hostname or 'loading' }}</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230c1a2e'/><text x='16' y='22' text-anchor='middle' font-size='18' fill='%232b7de9' font-family='sans-serif' font-weight='bold'>S</text></svg>">
 <style>
 @font-face { font-family:"Exo 2"; src:url("/static/fonts/exo-2-latin-700-normal.woff2") format("woff2"); font-weight:700; font-display:swap; }
 @font-face { font-family:"Plus Jakarta Sans"; src:url("/static/fonts/plus-jakarta-sans-latin-400-normal.woff2") format("woff2"); font-weight:400; font-display:swap; }
@@ -394,7 +394,7 @@ body {
     <div class="topbar-brand">
       <div class="topbar-logo">π</div>
       <div>
-        <div class="topbar-title">Pi<span>Monitor</span></div>
+        <div class="topbar-title">Sys<span>Monitor</span></div>
         <div class="topbar-sub" id="topbar-sub">{{ boot.hostname or '—' }} · {{ boot.architecture or '—' }}</div>
       </div>
     </div>
@@ -533,7 +533,7 @@ body {
 
   </div>
 
-  <div class="footer">Pi<span style="color:var(--orange)">Monitor</span> v2.0 · <a href="https://coreconduit.io" target="_blank">CoreConduit</a> Consulting Services</div>
+  <div class="footer">Sys<span style="color:var(--orange)">Monitor</span> v2.2.0 · <a href="https://coreconduit.com" target="_blank">CoreConduit</a> Consulting Services</div>
 </div>
 
 <!-- Confirm Modal -->
@@ -554,7 +554,7 @@ body {
 
 <script>
 // ════════════════════════════════════════════════════════════════════════
-// RPiMonitor Frontend v2 — Synthesized
+// SysMonitor Frontend v2 — Synthesized
 // ════════════════════════════════════════════════════════════════════════
 const REFRESH = {{ config.refresh_interval * 1000 }};
 const MAX_H = 60;
@@ -602,13 +602,13 @@ function setConnected(ok) {
   const bootInfo = {{ boot | tojson }};
   const lines = [
     { text: 'Scanning hardware…', cls: '' },
-    { text: 'Detected: ' + (bootInfo.model || 'Unknown device'), cls: 'highlight' },
-    { text: 'SoC: ' + (bootInfo.soc || '—') + ' | Arch: ' + (bootInfo.architecture || '—'), cls: 'info' },
-    { text: 'RAM: ' + (bootInfo.gpu_mb ? 'GPU ' + bootInfo.gpu_mb + 'MB | ' : '') + 'Kernel: ' + (bootInfo.kernel || '—'), cls: '' },
+    { text: 'Detected: ' + (bootInfo.cpu_model || 'Unknown CPU'), cls: 'highlight' },
+    { text: 'CPU: ' + (bootInfo.cpu_vendor || '—') + ' | Arch: ' + (bootInfo.architecture || '—'), cls: 'info' },
+    { text: 'Kernel: ' + (bootInfo.kernel || '—'), cls: '' },
     { text: 'Hostname: ' + (bootInfo.hostname || '—'), cls: '' },
     { text: 'OS: ' + (bootInfo.os || '—'), cls: '' },
     { text: 'Initializing monitors…', cls: '' },
-    { text: 'RPiMonitor v2.0 ready.', cls: 'highlight' },
+    { text: 'SysMonitor v2.0 ready.', cls: 'highlight' },
   ];
 
   const container = $('boot-log');
@@ -878,11 +878,12 @@ async function refreshTab() {
     const info = await api('boot');
     if (info) {
       const rows = [
-        ['Hostname', info.hostname], ['Model', info.model],
-        ['SoC', info.soc], ['Architecture', info.architecture],
+        ['Hostname', info.hostname],
+        ['CPU Model', info.cpu_model], ['CPU Vendor', info.cpu_vendor],
+        ['Architecture', info.architecture],
         ['Kernel', info.kernel], ['OS', info.os],
-        ['CPU', info.cpu_model], ['Max Freq', info.cpu_max_freq],
-        ['Python', info.python], ['Revision', info.revision],
+        ['Max Freq', info.cpu_max_freq],
+        ['Python', info.python],
       ].filter(([,v]) => v);
       $('sysinfo-rows').innerHTML = rows.map(([k, v]) =>
         `<div class="info-row"><span class="info-key">${esc(k)}</span><span class="info-val">${esc(v)}</span></div>`

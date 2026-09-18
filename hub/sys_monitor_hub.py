@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-RPiMonitorHub — Lord of the RPi Monitors
-One dashboard to discover, connect, and bind them all.
+SysMonitorHub — Fleet Management Console
+Aggregate dashboard for multiple SysMonitor nodes.
 
 A central aggregation console that discovers, monitors, and controls
-multiple RPiMonitor v2 instances across the network.
+multiple SysMonitor instances across the network.
 
-CoreConduit Consulting Services — https://coreconduit.io
+CoreConduit Consulting Services — https://coreconduit.com
 License: MIT
 """
 
@@ -32,18 +32,18 @@ VERSION = "2.2.0"
 # Configuration
 # ═══════════════════════════════════════════════════════════════════════════
 HUB_CONFIG = {
-    "host": os.getenv("PIHUB_HOST", "0.0.0.0"),
-    "port": int(os.getenv("PIHUB_PORT", "8686")),
-    "debug": os.getenv("PIHUB_DEBUG", "false").lower() == "true",
-    "auth_token": os.getenv("PIHUB_TOKEN", ""),
-    "poll_interval": int(os.getenv("PIHUB_POLL_INTERVAL", "5")),
-    "request_timeout": int(os.getenv("PIHUB_TIMEOUT", "4")),
-    "discovery_port": int(os.getenv("PIHUB_DISCOVERY_PORT", "8585")),
+    "host": os.getenv("SYSHUB_HOST", "0.0.0.0"),
+    "port": int(os.getenv("SYSHUB_PORT", "8686")),
+    "debug": os.getenv("SYSHUB_DEBUG", "false").lower() == "true",
+    "auth_token": os.getenv("SYSHUB_TOKEN", ""),
+    "poll_interval": int(os.getenv("SYSHUB_POLL_INTERVAL", "5")),
+    "request_timeout": int(os.getenv("SYSHUB_TIMEOUT", "4")),
+    "discovery_port": int(os.getenv("SYSHUB_DISCOVERY_PORT", "8585")),
 }
 
 _NODES_FILE = Path(
     os.getenv(
-        "PIHUB_NODES_FILE",
+        "SYSHUB_NODES_FILE",
         str(Path(__file__).parent / "hub_nodes.json"),
     )
 )
@@ -162,7 +162,7 @@ def _node_headers(node):
 
 
 def _fetch_node(node, path, method="GET", json_body=None, timeout=None):
-    """Make an HTTP request to an RPiMonitor node."""
+    """Make an HTTP request to a SysMonitor node."""
     t = timeout or HUB_CONFIG["request_timeout"]
     url = _node_url(node, path)
     headers = _node_headers(node)
@@ -261,7 +261,7 @@ def _get_local_ip():
 
 
 def _discover_subnet(subnet=None, port=None, timeout=1.5):
-    """Scan a /24 subnet for RPiMonitor instances responding to /api/ping."""
+    """Scan a /24 subnet for SysMonitor instances responding to /api/ping."""
     port = port or HUB_CONFIG["discovery_port"]
     if not subnet:
         local_ip = _get_local_ip()
@@ -345,7 +345,7 @@ def _serialize_node(n):
         "architecture": boot.get("architecture", ""),
         "os": boot.get("os", ""),
         "kernel": boot.get("kernel", ""),
-        "is_raspberry_pi": boot.get("is_raspberry_pi", False),
+        "cpu_vendor": boot.get("cpu_vendor", ""),
         # Live status
         "cpu_usage": status.get("cpu", {}).get("usage"),
         "cpu_cores": status.get("cpu", {}).get("core_count"),
@@ -541,18 +541,18 @@ if __name__ == "__main__":
     local_ip = _get_local_ip()
 
     print(f"""
-\033[33m╔══════════════════════════════════════════════════════════════╗
-║   Pi\033[93mMonitor\033[33m Hub · Lord of the Pi Monitors                    ║
+\033[36m╔══════════════════════════════════════════════════════════════╗
+║   Sys\033[33mMonitor\033[36m Hub · Fleet Management Console                  ║
 ║   CoreConduit Consulting Services                              ║
 ╠══════════════════════════════════════════════════════════════╣\033[0m
-  One dashboard to discover, connect, and bind them all.
+  Aggregate dashboard for multiple SysMonitor nodes.
 
   Listen:     http://{HUB_CONFIG['host']}:{HUB_CONFIG['port']}
   Local IP:   {local_ip}
   Nodes:      {node_count} registered
   Polling:    every {HUB_CONFIG['poll_interval']}s
   Auth:       {'ENABLED' if HUB_CONFIG['auth_token'] else 'DISABLED'}
-\033[33m╚══════════════════════════════════════════════════════════════╝\033[0m
+\033[36m╚══════════════════════════════════════════════════════════════╝\033[0m
 """)
 
     app.run(

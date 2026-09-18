@@ -1,10 +1,10 @@
-# RPiMonitor — API Reference
+# SysMonitor — API Reference
 
 All responses are JSON. Authentication (if enabled) requires `Authorization: Bearer <token>` on every request.
 
 ---
 
-## Node Agent API (`rpi_monitor.py`, default port 8585)
+## Node Agent API (`sys_monitor.py`, default port 8585)
 
 ### Health
 
@@ -24,26 +24,23 @@ Hardware identity, detected once at startup and cached.
 
 ```json
 {
-  "is_raspberry_pi": true,
-  "model": "Raspberry Pi 5 Model B Rev 1.0",
+  "model": "Generic Linux",
   "revision": "d04170",
   "serial": "abcdef12",
   "hardware": "BCM2835",
-  "soc": "BCM2712",
-  "gpu_mb": 76,
-  "hostname": "pi5",
-  "kernel": "6.6.31+rpt-rpi-2712",
-  "architecture": "aarch64",
-  "os": "Debian GNU/Linux 12 (bookworm)",
-  "cpu_model": "Cortex-A76",
+  "soc": "Intel Core i7-13700",
+  "hostname": "ubuntu-server",
+  "kernel": "6.8.0-100-generic",
+  "architecture": "x86_64",
+  "os": "Ubuntu 24.04 LTS",
+  "cpu_model": "Intel Core i7-13700",
   "cpu_max_freq": "2400 MHz",
-  "python": "3.11.2",
+  "python": "3.13.0",
   "boot_time": "2026-04-10T07:00:00"
 }
 ```
 
 > `serial` is the last 8 characters of the CPU serial number.
-> `gpu_mb` is `null` on non-Pi hardware.
 
 #### `GET /api/status`
 Live snapshot — CPU, memory, temperature, uptime, network rates. Polled by the dashboard on every refresh cycle.
@@ -66,7 +63,6 @@ Live snapshot — CPU, memory, temperature, uptime, network rates. Polled by the
     "buffers_mb": 128.0,
     "swap_total_mb": 100.0,
     "swap_used_mb": 0.0,
-    "gpu_mb": 76,
     "percent": 25.0
   },
   "temperature": 52.3,
@@ -154,7 +150,7 @@ Query params: `?limit=N` (default 12, max 50).
     "pid": 1234,
     "cpu": 12.5,
     "mem": 1.3,
-    "command": "python3 /opt/rpi-monitor/rpi_monitor.py"
+    "command": "python3 /opt/sys-monitor/sys_monitor.py"
   }
 ]
 ```
@@ -165,7 +161,7 @@ Send a signal to a process.
 Query param: `?signal=N` (default 15 / SIGTERM).
 
 ```bash
-curl -X DELETE "http://pi:8585/api/processes/1234?signal=9"
+curl -X DELETE "http://node:8585/api/processes/1234?signal=9"
 ```
 
 Response:
@@ -202,7 +198,7 @@ Status of all monitored services.
 Control a service. Valid actions: `start`, `stop`, `restart`, `enable`, `disable`.
 
 ```bash
-curl -X POST http://pi:8585/api/services/nginx/restart
+curl -X POST http://node:8585/api/services/nginx/restart
 ```
 
 Response:
@@ -242,7 +238,7 @@ Rename a service entry.
 Valid actions: `reboot`, `shutdown`.
 
 ```bash
-curl -X POST http://pi:8585/api/power/reboot
+curl -X POST http://node:8585/api/power/reboot
 ```
 
 Response:
@@ -263,7 +259,7 @@ Query params:
 
 ```json
 [
-  {"ts": "14:22:01", "msg": "PiMonitor ready.", "level": "success"},
+  {"ts": "14:22:01", "msg": "SysMonitor ready.", "level": "success"},
   {"ts": "14:23:10", "msg": "Service restarted: nginx", "level": "info"}
 ]
 ```
@@ -344,7 +340,46 @@ Uses `journalctl -p err` to filter for error priority.
 
 ---
 
-## Fleet Hub API (`hub/rpi_monitor_hub.py`, default port 8686)
+### System Health
+
+#### `GET /api/system-health`
+Returns system health status, critical services, and stability checks. Added in v2.2.0.
+
+```json
+{
+  "stable": true,
+  "issues": [],
+  "critical_services_failed": [],
+  "all_critical_ok": true
+}
+```
+
+When there are issues:
+
+```json
+{
+  "stable": false,
+  "issues": [
+    { "type": "oom", "severity": "critical", "message": "Out of memory condition detected" },
+    { "type": "kernel_error", "severity": "critical", "message": "Kernel oops detected" },
+    { "type": "restart_loop", "severity": "warning", "message": "Service restart loop detected (7 restarts)" }
+  ],
+  "critical_services_failed": [
+    { "name": "dbus", "state": "inactive", "critical": true }
+  ],
+  "all_critical_ok": false
+}
+```
+
+Checks performed:
+- Critical service status (`systemd-journald`, `dbus`, `cron`, `systemd-networkd`/`networking`)
+- OOM events in journal
+- Kernel errors in journal
+- Service restart loops (>5 restarts in recent logs)
+
+---
+
+## Fleet Hub API (`hub/sys_monitor_hub.py`, default port 8686)
 
 ### Health
 
@@ -367,18 +402,17 @@ Cached snapshot of all registered nodes (updated every poll interval).
       "id": "192-168-1-42-8585",
       "host": "192.168.1.42",
       "port": 8585,
-      "label": "Pi-Living-Room",
+      "label": "Living-Room",
       "token_set": false,
       "added": "2026-04-10T07:00:00",
       "online": true,
       "last_seen": 1713100000.0,
-      "hostname": "pi5",
-      "model": "Raspberry Pi 5 Model B Rev 1.0",
-      "soc": "BCM2712",
-      "architecture": "aarch64",
-      "os": "Debian GNU/Linux 12 (bookworm)",
-      "kernel": "6.6.31+rpt-rpi-2712",
-      "is_raspberry_pi": true,
+      "hostname": "ubuntu-server",
+      "model": "Generic Linux",
+      "soc": "Intel Core i7-13700",
+      "architecture": "x86_64",
+      "os": "Ubuntu 24.04 LTS",
+      "kernel": "6.8.0-100-generic",
       "cpu_usage": 12.4,
       "cpu_cores": 4,
       "temperature": 52.3,
@@ -405,7 +439,7 @@ Cached snapshot of all registered nodes (updated every poll interval).
 Register a new node.
 
 ```json
-{"host": "192.168.1.42", "port": 8585, "label": "Pi-A", "token": ""}
+{"host": "192.168.1.42", "port": 8585, "label": "Node-A", "token": ""}
 ```
 
 #### `DELETE /api/nodes/<nid>`
@@ -419,7 +453,7 @@ Update a node's label or token.
 ### Discovery
 
 #### `POST /api/discover`
-Scan the local subnet for PiMonitor agents. Probes `<ip>:PIHUB_DISCOVERY_PORT/api/ping` in parallel across the /24.
+Scan the local subnet for SysMonitor agents. Probes `<ip>:SYSHUB_DISCOVERY_PORT/api/ping` in parallel across the /24.
 
 Request body (optional):
 ```json
@@ -433,8 +467,8 @@ Response:
     {
       "host": "192.168.1.42",
       "port": 8585,
-      "hostname": "pi5",
-      "model": "Raspberry Pi 5 Model B Rev 1.0",
+      "hostname": "ubuntu-server",
+      "model": "Generic Linux",
       "id": "192-168-1-42-8585",
       "already_registered": false
     }

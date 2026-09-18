@@ -2,35 +2,35 @@
 
 All configuration is via environment variables. No config files are required.
 
-Set them in the systemd unit file (`/etc/systemd/system/rpi-monitor.service`) or export them before running directly.
+Set them in the systemd unit file (`/etc/systemd/system/sys-monitor.service`) or export them before running directly.
 
 ---
 
-## Node Agent (`pi_monitor.py`)
+## Node Agent (`sys_monitor.py`)
 
 | Variable | Default | Description |
 |---|---|---|
-| `PIMONITOR_HOST` | `0.0.0.0` | Bind address. Use `127.0.0.1` to restrict to localhost. |
-| `PIMONITOR_PORT` | `8585` | Listen port. |
-| `PIMONITOR_DEBUG` | `false` | Flask debug mode. **Never enable in production.** |
-| `PIMONITOR_TOKEN` | *(empty)* | Bearer token for API auth. Leave empty to disable. |
-| `PIMONITOR_SERVICES` | `ssh,nginx,docker,...` | Comma-separated list of systemd services to monitor. |
-| `PIMONITOR_REFRESH` | `2` | Frontend polling interval in seconds. |
-| `PIMONITOR_SERVICES_FILE` | `./services.json` | Path to persist the service list. |
+| `SYSMONITOR_HOST` | `0.0.0.0` | Bind address. Use `127.0.0.1` to restrict to localhost. |
+| `SYSMONITOR_PORT` | `8585` | Listen port. |
+| `SYSMONITOR_DEBUG` | `false` | Flask debug mode. **Never enable in production.** |
+| `SYSMONITOR_TOKEN` | *(empty)* | Bearer token for API auth. Leave empty to disable. |
+| `SYSMONITOR_SERVICES` | `ssh,nginx,docker,...` | Comma-separated list of systemd services to monitor. |
+| `SYSMONITOR_REFRESH` | `2` | Frontend polling interval in seconds. |
+| `SYSMONITOR_SERVICES_FILE` | `./services.json` | Path to persist the service list. |
 
 ### Authentication
 
-When `PIMONITOR_TOKEN` is set, all API endpoints require:
+When `SYSMONITOR_TOKEN` is set, all API endpoints require:
 
 ```
 Authorization: Bearer <your-token>
 ```
 
-The web UI does not currently send auth headers — token auth is intended for API-only access. For UI auth, place PiMonitor behind a reverse proxy with HTTP basic auth.
+The web UI does not currently send auth headers — token auth is intended for API-only access. For UI auth, place SysMonitor behind a reverse proxy with HTTP basic auth.
 
 ### Service List
 
-The service list is seeded from `PIMONITOR_SERVICES` on first run, then persisted to `services.json`. Once the file exists, the env var is ignored. To reset, delete `services.json` and restart.
+The service list is seeded from `SYSMONITOR_SERVICES` on first run, then persisted to `services.json`. Once the file exists, the env var is ignored. To reset, delete `services.json` and restart.
 
 You can also manage the list live via the API:
 - `POST /api/services/config` — add a service
@@ -39,18 +39,18 @@ You can also manage the list live via the API:
 
 ---
 
-## Hub (`hub/rpi_monitor_hub.py`)
+## Hub (`hub/sys_monitor_hub.py`)
 
 | Variable | Default | Description |
 |---|---|---|
-| `PIHUB_HOST` | `0.0.0.0` | Bind address. |
-| `PIHUB_PORT` | `8686` | Listen port. |
-| `PIHUB_TOKEN` | *(empty)* | Bearer token for hub API auth. |
-| `PIHUB_POLL_INTERVAL` | `5` | Seconds between fleet health polls. |
-| `PIHUB_TIMEOUT` | `4` | Per-node HTTP timeout in seconds. |
-| `PIHUB_DISCOVERY_PORT` | `8585` | Default port to probe during network discovery. |
-| `PIHUB_NODES_FILE` | `./hub_nodes.json` | Path to the persistent node registry. |
-| `PIHUB_DEBUG` | `false` | Flask debug mode. |
+| `SYSHUB_HOST` | `0.0.0.0` | Bind address. |
+| `SYSHUB_PORT` | `8686` | Listen port. |
+| `SYSHUB_TOKEN` | *(empty)* | Bearer token for hub API auth. |
+| `SYSHUB_POLL_INTERVAL` | `5` | Seconds between fleet health polls. |
+| `SYSHUB_TIMEOUT` | `4` | Per-node HTTP timeout in seconds. |
+| `SYSHUB_DISCOVERY_PORT` | `8585` | Default port to probe during network discovery. |
+| `SYSHUB_NODES_FILE` | `./hub_nodes.json` | Path to the persistent node registry. |
+| `SYSHUB_DEBUG` | `false` | Flask debug mode. |
 
 ### Node Registry
 
@@ -63,23 +63,23 @@ Registered nodes are stored in `hub_nodes.json`. This file is created automatica
 Edit the service file:
 
 ```bash
-sudo systemctl edit rpi-monitor
+sudo systemctl edit sys-monitor
 ```
 
 Add:
 
 ```ini
 [Service]
-Environment=PIMONITOR_TOKEN=my-secret
-Environment=PIMONITOR_SERVICES=ssh,nginx,docker,ollama
-Environment=PIMONITOR_REFRESH=3
+Environment=SYSMONITOR_TOKEN=my-secret
+Environment=SYSMONITOR_SERVICES=ssh,nginx,docker,ollama
+Environment=SYSMONITOR_REFRESH=3
 ```
 
 Then reload:
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl restart rpi-monitor
+sudo systemctl restart sys-monitor
 ```
 
 ---

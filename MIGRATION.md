@@ -1,21 +1,21 @@
-# Migration Guide: pi-monitor → rpi-monitor
+# Migration Guide: sys-monitor → sys-monitor
 
-This guide covers upgrading from pi-monitor v2.0.0 to rpi-monitor v2.0.0.
+This guide covers upgrading from sys-monitor v2.0.0 to sys-monitor v2.0.0.
 
 ## What Changed
 
 | Category | Old Value | New Value |
 |----------|-----------|-----------|
-| File name | `pi_monitor.py` | `rpi_monitor.py` |
-| Service name | `pi-monitor` | `rpi-monitor` |
-| Hub service | `pi-monitor-hub` | `rpi-monitor-hub` |
-| Install directory | `/opt/pi-monitor` | `/opt/rpi-monitor` |
-| GitHub URL | `coreconduit/pi-monitor` | `coreconduit/rpi-monitor` |
-| GitHub URL (bitsandbots) | `bitsandbots/pi-monitor` | `bitsandbots/rpi-monitor` |
+| File name | `sys_monitor.py` | `sys_monitor.py` |
+| Service name | `sys-monitor` | `sys-monitor` |
+| Hub service | `sys-monitor-hub` | `sys-monitor-hub` |
+| Install directory | `/opt/sys-monitor` | `/opt/sys-monitor` |
+| GitHub URL | `coreconduit/sys-monitor` | `coreconduit/sys-monitor` |
+| GitHub URL (bitsandbots) | `bitsandbots/sys-monitor` | `bitsandbots/sys-monitor` |
 
 ## What Stayed the Same
 
-- **Environment variables:** `PIMONITOR_*` and `PIHUB_*` prefixes unchanged
+- **Environment variables:** `SYSMONITOR_*` and `SYSHUB_*` prefixes unchanged
 - **Ports:** Node agent (8585), Hub (8686)
 - **API endpoints:** All `/api/*` paths unchanged
 - **Web UI:** Same interface, same functionality
@@ -29,15 +29,15 @@ This guide covers upgrading from pi-monitor v2.0.0 to rpi-monitor v2.0.0.
 
 ```bash
 # Backup existing configuration (optional)
-sudo cp /opt/pi-monitor/services.json /opt/pi-monitor/services.json.bak 2>/dev/null || true
+sudo cp /opt/sys-monitor/services.json /opt/sys-monitor/services.json.bak 2>/dev/null || true
 
 # Install new version
-git clone https://github.com/bitsandbots/rpi-monitor
-cd rpi-monitor
+git clone https://github.com/bitsandbots/sys-monitor
+cd sys-monitor
 sudo ./install.sh
 ```
 
-This will install to `/opt/rpi-monitor` with the new service name.
+This will install to `/opt/sys-monitor` with the new service name.
 
 ### Option 2: In-Place Upgrade (Existing Installation)
 
@@ -45,17 +45,17 @@ If you want to keep your existing configuration:
 
 ```bash
 # 1. Stop the current service
-sudo systemctl stop pi-monitor pi-monitor-hub
+sudo systemctl stop sys-monitor sys-monitor-hub
 
 # 2. Clone the new repo
-git clone https://github.com/bitsandbots/rpi-monitor /opt/rpi-monitor
+git clone https://github.com/bitsandbots/sys-monitor /opt/sys-monitor
 
 # 3. Copy your existing configuration
-sudo cp /opt/pi-monitor/services.json /opt/rpi-monitor/
-sudo cp /opt/pi-monitor/.env /opt/rpi-monitor/ 2>/dev/null || true
+sudo cp /opt/sys-monitor/services.json /opt/sys-monitor/
+sudo cp /opt/sys-monitor/.env /opt/sys-monitor/ 2>/dev/null || true
 
 # 4. Install as new service
-cd /opt/rpi-monitor
+cd /opt/sys-monitor
 sudo ./install.sh
 ```
 
@@ -63,18 +63,18 @@ sudo ./install.sh
 
 ```bash
 # Stop services
-sudo systemctl stop pi-monitor pi-monitor-hub
+sudo systemctl stop sys-monitor sys-monitor-hub
 
 # Download and extract release
-curl -LO https://github.com/bitsandbots/rpi-monitor/releases/download/v2.0.0/rpi-monitor-2.0.0.tar.gz
-tar -xzf rpi-monitor-2.0.0.tar.gz
+curl -LO https://github.com/bitsandbots/sys-monitor/releases/download/v2.0.0/sys-monitor-2.0.0.tar.gz
+tar -xzf sys-monitor-2.0.0.tar.gz
 
 # Install new service (this removes old service)
-cd rpi-monitor-2.0.0
+cd sys-monitor-2.0.0
 sudo ./install.sh
 
 # If you had custom services.json, restore it:
-sudo cp /tmp/rpi-monitor-2.0.0.tar.gz-backup/services.json /opt/rpi-monitor/
+sudo cp /tmp/sys-monitor-2.0.0.tar.gz-backup/services.json /opt/sys-monitor/
 ```
 
 ---
@@ -85,8 +85,8 @@ After upgrading, verify:
 
 - [ ] Node agent accessible at `http://<ip>:8585`
 - [ ] Hub accessible at `http://<ip>:8686` (if installed)
-- [ ] Service running: `systemctl status rpi-monitor`
-- [ ] Logs showing correct version: `journalctl -u rpi-monitor -f`
+- [ ] Service running: `systemctl status sys-monitor`
+- [ ] Logs showing correct version: `journalctl -u sys-monitor -f`
 - [ ] Services list persisted: Check Services tab in UI
 
 ---
@@ -97,10 +97,10 @@ If you did a fresh install and want to clean up:
 
 ```bash
 # Remove old directory
-sudo rm -rf /opt/pi-monitor 2>/dev/null || true
+sudo rm -rf /opt/sys-monitor 2>/dev/null || true
 
 # Uninstall hub if installed separately
-cd /opt/pi-monitor/hub  # if it still exists
+cd /opt/sys-monitor/hub  # if it still exists
 sudo ./install.sh --uninstall
 ```
 
@@ -108,31 +108,31 @@ sudo ./install.sh --uninstall
 
 ## Troubleshooting
 
-### "Permission denied" on /opt/rpi-monitor
+### "Permission denied" on /opt/sys-monitor
 
-The new service expects `/opt/rpi-monitor`. Update your sudoers rules if running as non-root:
+The new service expects `/opt/sys-monitor`. Update your sudoers rules if running as non-root:
 
 ```bash
-# /etc/sudoers.d/rpi-monitor (was: pi-monitor)
-rpi-monitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl start ssh nginx docker
-rpi-monitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop ssh nginx docker
-rpi-monitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart ssh nginx docker
-rpi-monitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl enable ssh nginx docker
-rpi-monitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl disable ssh nginx docker
-rpi-monitor ALL=(ALL) NOPASSWD: /sbin/reboot
-rpi-monitor ALL=(ALL) NOPASSWD: /sbin/shutdown
+# /etc/sudoers.d/sys-monitor (was: sys-monitor)
+sys-monitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl start ssh nginx docker
+sys-monitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop ssh nginx docker
+sys-monitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart ssh nginx docker
+sys-monitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl enable ssh nginx docker
+sys-monitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl disable ssh nginx docker
+sys-monitor ALL=(ALL) NOPASSWD: /sbin/reboot
+sys-monitor ALL=(ALL) NOPASSWD: /sbin/shutdown
 ```
 
 ### Old service still running after upgrade
 
 ```bash
 # Check for old service
-systemctl list-units | grep pi-monitor
+systemctl list-units | grep sys-monitor
 
 # Stop and remove if found
-sudo systemctl stop pi-monitor pi-monitor-hub
-sudo systemctl disable pi-monitor pi-monitor-hub
-sudo rm -f /etc/systemd/system/pi-monitor*.service
+sudo systemctl stop sys-monitor sys-monitor-hub
+sudo systemctl disable sys-monitor sys-monitor-hub
+sudo rm -f /etc/systemd/system/sys-monitor*.service
 sudo systemctl daemon-reload
 ```
 
@@ -141,16 +141,16 @@ sudo systemctl daemon-reload
 Environment variables in systemd unit files may reference the old paths. Check:
 
 ```bash
-sudo systemctl cat rpi-monitor | grep -i environment
+sudo systemctl cat sys-monitor | grep -i environment
 ```
 
 If needed, update the service file:
 
 ```bash
-sudo systemctl edit rpi-monitor
-# Add: Environment=PIMONITOR_SERVICES_FILE=/opt/rpi-monitor/services.json
+sudo systemctl edit sys-monitor
+# Add: Environment=SYSMONITOR_SERVICES_FILE=/opt/sys-monitor/services.json
 sudo systemctl daemon-reload
-sudo systemctl restart rpi-monitor
+sudo systemctl restart sys-monitor
 ```
 
 ---
@@ -158,5 +158,5 @@ sudo systemctl restart rpi-monitor
 ## Support
 
 For issues, check:
-- Wiki: https://github.com/bitsandbots/rpi-monitor/wiki
+- Wiki: https://github.com/bitsandbots/sys-monitor/wiki
 - Documentation: `docs/` folder in the repository
