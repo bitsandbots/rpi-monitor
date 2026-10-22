@@ -17,7 +17,8 @@ StandardError=journal
 # Environment
 Environment=SYSMONITOR_HOST=0.0.0.0
 Environment=SYSMONITOR_PORT=8585
-# Environment=SYSMONITOR_TOKEN=your-secret-token
+EnvironmentFile=-/etc/sys-monitor/env
+# /etc/sys-monitor/env (mode 600): SYSMONITOR_TOKEN=<random>, optional SYSMONITOR_ALLOWED_HOSTS=name1,name2
 # Environment=SYSMONITOR_SERVICES=ssh,nginx,docker,ollama,mosquitto
 # Environment=SYSMONITOR_REFRESH=2
 
@@ -27,6 +28,21 @@ ReadWritePaths=/opt/sys-monitor
 ProtectHome=read-only
 NoNewPrivileges=false
 PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictNamespaces=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictRealtime=true
+RemoveIPC=true
+SystemCallArchitectures=native
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
 
 [Install]
 WantedBy=multi-user.target
