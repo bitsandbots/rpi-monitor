@@ -127,7 +127,8 @@ All configuration is via environment variables — no config files to manage.
 | `SYSMONITOR_HOST` | `0.0.0.0` | Bind address |
 | `SYSMONITOR_PORT` | `8585` | Port |
 | `SYSMONITOR_DEBUG` | `false` | Flask debug mode |
-| `SYSMONITOR_TOKEN` | *(empty)* | Optional Bearer token for API auth |
+| `SYSMONITOR_TOKEN` | *(empty)* | Bearer token for API auth. Without it, state-changing routes are refused unless bound to loopback |
+| `SYSMONITOR_ALLOWED_HOSTS` | *(empty)* | Extra `Host` names accepted (IP literals, `localhost` and the hostname are always allowed) |
 | `SYSMONITOR_SERVICES` | `ssh,nginx,docker,...` | Comma-separated service whitelist |
 | `SYSMONITOR_REFRESH` | `2` | Frontend polling interval (seconds) |
 
@@ -148,7 +149,9 @@ Set `SYSMONITOR_TOKEN` to require Bearer token auth on all API endpoints:
 export SYSMONITOR_TOKEN=my-secret-token
 ```
 
-The web UI currently does not send auth headers — token auth is designed for API-only access. For UI auth, place SysMonitor behind a reverse proxy with basic auth.
+The web UI prompts for the token on the first 401 and keeps it in `localStorage`. Failed attempts are logged to the journal, and a client IP is locked out (HTTP 429) after 10 failures per minute. Tokens are compared in constant time.
+
+State-changing requests (POST/PUT/DELETE) must send `X-Requested-With: SysMonitor`, and any `Origin` header must match the `Host`. Requests with an unknown `Host` are rejected (DNS-rebinding guard). The bundled unit loads the token from `/etc/sys-monitor/env` (mode 600). Traffic is plain HTTP, so keep it on a trusted LAN or put TLS in front.
 
 ## API Endpoints
 

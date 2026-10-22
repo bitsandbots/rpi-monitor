@@ -8,13 +8,17 @@ CoreConduit Consulting Services — https://coreconduit.com
 License: MIT
 """
 
+import hmac
+import ipaddress
 import json
 import os
 import re
 import signal
+import socket
 import subprocess
 import threading
 import time
+from collections import defaultdict, deque
 from datetime import datetime, timedelta
 from functools import wraps
 from pathlib import Path
@@ -143,19 +147,120 @@ def detect_system():
 # ═══════════════════════════════════════════════════════════════════════════
 # Auth Middleware
 # ═══════════════════════════════════════════════════════════════════════════
+_AUTH_FAIL_MAX = 10  # failed attempts allowed per window, per client IP
+_AUTH_FAIL_WINDOW = 60  # seconds
+_auth_failures: "defaultdict[str, deque]" = defaultdict(deque)
+_auth_lock = threading.Lock()
+_LOOPBACK_HOSTS = ("127.0.0.1", "::1", "localhost")
+
+
+def _client_ip() -> str:
+    return request.remote_addr or "unknown"
+
+
+def _auth_locked_out(ip: str) -> bool:
+    """True if ip has hit the failed-auth limit inside the window."""
+    now = time.time()
+    with _auth_lock:
+        q = _auth_failures[ip]
+        while q and now - q[0] > _AUTH_FAIL_WINDOW:
+            q.popleft()
+        return len(q) >= _AUTH_FAIL_MAX
+
+
+def _auth_record_failure(ip: str) -> None:
+    with _auth_lock:
+        _auth_failures[ip].append(time.time())
+
+
 def require_auth(f):
-    """Optional bearer-token authentication."""
+    """Bearer-token authentication.
+
+    With a token configured, every request must present it (constant-time
+    compare, per-IP lockout, failures logged). Without one, read-only routes
+    stay open but state-changing routes are refused unless bound to loopback.
+    """
 
     @wraps(f)
     def decorated(*args, **kwargs):
         token = CONFIG["auth_token"]
+        ip = _client_ip()
         if token:
-            auth = request.headers.get("Authorization", "")
-            if auth != f"Bearer {token}":
+            if _auth_locked_out(ip):
+                log_event(f"Auth lockout: {ip}", "warning")
+                abort(429, description="Too many failed attempts")
+            supplied = request.headers.get("Authorization", "")
+            expected = f"Bearer {token}"
+            if not hmac.compare_digest(supplied.encode(), expected.encode()):
+                _auth_record_failure(ip)
+                log_event(
+                    f"Auth failed: {request.method} {request.path} from {ip}",
+                    "warning",
+                )
                 abort(401, description="Unauthorized")
+        elif (
+            request.method not in ("GET", "HEAD", "OPTIONS")
+            and CONFIG["host"] not in _LOOPBACK_HOSTS
+        ):
+            abort(
+                403,
+                description="State-changing API disabled: set SYSMONITOR_TOKEN",
+            )
         return f(*args, **kwargs)
 
     return decorated
+
+
+def _allowed_hosts() -> set:
+    hosts = {
+        h.strip().lower()
+        for h in os.getenv("SYSMONITOR_ALLOWED_HOSTS", "").split(",")
+        if h.strip()
+    }
+    name = socket.gethostname().lower()
+    hosts |= {"localhost", name, f"{name}.local"}
+    return hosts
+
+
+_ALLOWED_HOSTS = _allowed_hosts()
+
+
+def _host_ok(hostport: str) -> bool:
+    """Accept IP literals and known names only (blocks DNS rebinding)."""
+    host = hostport.strip().lower()
+    if host.startswith("["):
+        host = host[1 : host.find("]")]
+    elif host.count(":") == 1:
+        host = host.split(":")[0]
+    try:
+        ipaddress.ip_address(host)
+        return True
+    except ValueError:
+        return host in _ALLOWED_HOSTS
+
+
+@app.before_request
+def guard_request():
+    """Reject rebinding (bad Host) and cross-site / non-XHR mutations (CSRF)."""
+    if not _host_ok(request.host):
+        abort(400, description="Host not allowed")
+    if request.method in ("GET", "HEAD", "OPTIONS"):
+        return None
+    origin = request.headers.get("Origin")
+    if origin and origin.split("://", 1)[-1] != request.host:
+        abort(403, description="Cross-origin request blocked")
+    if request.headers.get("X-Requested-With") != "SysMonitor":
+        abort(403, description="Missing X-Requested-With header")
+    return None
+
+
+@app.after_request
+def security_headers(resp):
+    resp.headers.setdefault("X-Content-Type-Options", "nosniff")
+    resp.headers.setdefault("X-Frame-Options", "DENY")
+    resp.headers.setdefault("Referrer-Policy", "no-referrer")
+    resp.headers.setdefault("Cache-Control", "no-store")
+    return resp
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -339,7 +444,11 @@ def _parse_systemctl_failed(output: str, scope: str) -> list:
 
 
 USER_TIMER_JOBS = [
-    {"service": "backup-stack.service", "timer": "backup-stack.timer", "label": "backup-stack"},
+    {
+        "service": "backup-stack.service",
+        "timer": "backup-stack.timer",
+        "label": "backup-stack",
+    },
 ]
 
 
@@ -405,7 +514,10 @@ def get_critical_services_status() -> list:
     """
     critical = ["systemd-journald", "dbus", "cron"]
     # Add the networking service that actually exists on this system
-    if _run("systemctl is-active systemd-networkd 2>/dev/null") in ("active", "inactive"):
+    if _run("systemctl is-active systemd-networkd 2>/dev/null") in (
+        "active",
+        "inactive",
+    ):
         critical.append("systemd-networkd")
     elif _run("systemctl is-active networking 2>/dev/null") in ("active", "inactive"):
         critical.append("networking")
@@ -1007,6 +1119,8 @@ LOG_MAX = 200
 
 def log_event(msg: str, level: str = "info"):
     """Append an event to the in-memory log."""
+    if level in ("warning", "error"):
+        print(f"[{level}] {msg}", flush=True)  # persists in the journal
     with _log_lock:
         _event_log.append(
             {
